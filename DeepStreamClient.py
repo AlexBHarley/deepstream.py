@@ -9,8 +9,7 @@ class DeepStreamClient:
         self._connection = Connection(ip, port)
 
     def login(self, username, password):
-        self._connection.open()
         credentials = json.dumps({"username": username, "password": password})
         print("Using credentials %s" % credentials)
         self._connection.authenticate(credentials)
-        self._connection._startMessageLoop()
+        self._connection._start_message_loop()

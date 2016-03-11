@@ -2,6 +2,7 @@ import socket
 
 import Constants
 from message import MessageBuilder
+from message import MessageParser
 
 
 class Connection:
@@ -14,10 +15,11 @@ class Connection:
         self._port = port
         self._auth_params = None
 
-    def open(self):
+    def _open(self):
         self.sock.connect((self._ip_address, self._port))
 
     def authenticate(self, auth_params):
+        self._open()
         self._auth_params = auth_params
         self._send_auth_params()
 
@@ -25,14 +27,20 @@ class Connection:
         byte_message = str.encode(data)
         print("Using bytes: %s" % byte_message)
         self.sock.send(byte_message)
-        self._startMessageLoop()
+        self._start_message_loop()
 
-    def start_message_loop(self):
+    def _start_message_loop(self):
         data = self.sock.recv(1024)
-        print("Received %s" % data)
+        messages = MessageParser.parse(data)
+
+        for msg in messages:
+            if msg["topic"] == Constants.TOPIC_AUTH:
+                self._handle_auth_response(msg)
 
     def _send_auth_params(self):
         auth_message = MessageBuilder.get_message(Constants.TOPIC_AUTH, Constants.ACTIONS_REQUEST, [self._auth_params])
         print("Connecting: %s" % auth_message)
         self.send(auth_message)
 
+    def _handle_auth_response(self, message):
+        print("Connected")
