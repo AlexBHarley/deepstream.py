@@ -1,4 +1,4 @@
-from deepstream import Constants
+from src import Constants
 
 
 def get_message(topic, action, data):

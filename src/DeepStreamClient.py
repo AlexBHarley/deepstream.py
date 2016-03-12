@@ -1,4 +1,4 @@
-from deepstream.Connection import Connection
+from src.Connection import Connection
 import json
 
 

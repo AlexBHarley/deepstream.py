@@ -1,8 +1,6 @@
 import socket
-from deepstream import Constants
-from deepstream.message import MessageParser
-from deepstream.message import MessageBuilder
-
+from src import Constants
+from src.message import MessageBuilder
 
 
 class Connection:

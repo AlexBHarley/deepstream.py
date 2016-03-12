@@ -1,4 +1,4 @@
-from deepstream.DeepStreamClient import DeepStreamClient
+from src.DeepStreamClient import DeepStreamClient
 
 username = "XXX"
 password = "YYY"
