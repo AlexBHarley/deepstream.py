@@ -8,6 +8,7 @@ def step_impl(context):
 @then('the client is initialised')
 def step_impl(context):
     context.ds = Connection("localhost", 6021)
+
     assert (context.ds != None)
 
 

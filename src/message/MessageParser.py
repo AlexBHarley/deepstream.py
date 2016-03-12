@@ -1,4 +1,4 @@
-import Constants
+from src import Constants
 
 
 def parse(message):
