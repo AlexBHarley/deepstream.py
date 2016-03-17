@@ -4,8 +4,6 @@ from pyee import EventEmitter
 
 class EventHandler:
 
-    _emitter = EventEmitter()
-
     def __init__(self, connection, client):
         self._connection = connection
         self._emitter = EventEmitter()

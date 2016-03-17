@@ -44,11 +44,13 @@ class Connection:
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
         self._endpoint._emitter.on('data', self._on_data)
+        self._endpoint.start()
 
     def _on_data(self, data):
         messages = MessageParser.parse(data)
 
         for msg in messages:
+            print("Receiving %s" % msg)
             if msg["topic"] == Constants.TOPIC_AUTH:
                 self._handle_auth_response(msg)
             else:

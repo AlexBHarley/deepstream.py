@@ -19,7 +19,6 @@ class AsyncSocket(threading.Thread):
         self.q.put((function, args, kwargs))
 
     def run(self):
-        print('here')
         while True:
             try:
                 function, args, kwargs = self.q.get(timeout=self.timeout)
@@ -33,12 +32,10 @@ class AsyncSocket(threading.Thread):
 
             try:
                 data = self.sock.recv(1024)
-                print(data)
                 if not data:
                     pass
                 self._emitter.emit('data', data)
             except Exception as e:
-                print(e)
                 pass
 
     def send(self, msg):

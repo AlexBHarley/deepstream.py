@@ -16,6 +16,5 @@ class DeepStreamClient:
         self._connection.authenticate(credentials)
 
     def _on_message(self, message):
-        print(message)
         if message["topic"] == Constants.TOPIC_EVENT:
             self.event.handle(message)

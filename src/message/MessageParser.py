@@ -13,7 +13,6 @@ def parse(message):
 
 def _parse_message(message):
     parts = message.split(Constants.MESSAGE_PART_SEPARATOR)
-    print(len(parts))
     message_object = {}
 
     message_object["topic"] = parts[0]
