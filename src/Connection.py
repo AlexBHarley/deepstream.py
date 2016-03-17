@@ -1,7 +1,7 @@
-import socket
 from src import Constants
 from src.message import MessageBuilder
-from src.TcpClient import TcpClient
+from src.message import MessageParser
+from src.TcpConnection import AsyncSocket
 
 
 class Connection:
@@ -26,39 +26,31 @@ class Connection:
 
     def send_message(self, event, action, data):
         msg = MessageBuilder.get_message(event, action, data)
-        self._endpoint.send(msg)
+        self._send(msg)
 
-    def send(self, data):
+    def _send(self, data):
+        print("Sending: %s" % data)
         byte_message = str.encode(data)
-        print("Using bytes: %s" % byte_message)
         self._endpoint.send(byte_message)
-
-    '''
-    def _start_message_loop(self):
-        data = self.sock.recv(1024)
-        messages = MessageParser.parse(data)
-
-        for msg in messages:
-            if msg["topic"] == Constants.TOPIC_AUTH:
-                self._handle_auth_response(msg)
-            else:
-                self._client._on_message(msg)
-
-        self._tcp_client.on('message', self._on_data)
-    '''
 
     def _send_auth_params(self):
         auth_message = MessageBuilder.get_message(Constants.TOPIC_AUTH, Constants.ACTIONS_REQUEST, [self._auth_params])
-        print("Connecting: %s" % auth_message)
-        self.send(auth_message)
+        self._send(auth_message)
 
     def _handle_auth_response(self, message):
         if message["action"] == Constants.ACTIONS_ACK:
             self._state = Constants.CONNECTION_STATE_OPEN
 
     def _create_endpoint(self):
-        self._endpoint = TcpClient().initialise(self._ip_address, self._port)
-        self._endpoint.on('message', self._on_message)
+        self._endpoint = AsyncSocket(self._ip_address, self._port)
+        self._endpoint._emitter.on('data', self._on_data)
 
-    def _on_message(self, message):
-        print(message)
+    def _on_data(self, data):
+        messages = MessageParser.parse(data)
+
+        for msg in messages:
+            if msg["topic"] == Constants.TOPIC_AUTH:
+                self._handle_auth_response(msg)
+            else:
+                print(data)
+                #self._client._on_message(msg)
