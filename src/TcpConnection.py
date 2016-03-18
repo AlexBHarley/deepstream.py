@@ -12,7 +12,7 @@ class AsyncSocket(threading.Thread):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((ip, port))
         self.timeout = 1
-        self._emitter = EventEmitter()
+        self.emitter = EventEmitter()
         super(AsyncSocket, self).__init__()
 
     def onThread(self, function, *args, **kwargs):
@@ -34,7 +34,7 @@ class AsyncSocket(threading.Thread):
                 data = self.sock.recv(1024)
                 if not data:
                     pass
-                self._emitter.emit('data', data)
+                self._on_data(data)
             except Exception as e:
                 pass
 
@@ -43,3 +43,8 @@ class AsyncSocket(threading.Thread):
 
     def _send(self, data):
         self.buffer += data
+
+    def _on_data(self, raw_data):
+        #checks for valid data
+        #buffer data
+        self.emitter.emit('message', raw_data)

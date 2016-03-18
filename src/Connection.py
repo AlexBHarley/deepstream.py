@@ -2,6 +2,7 @@ from src import Constants
 from src.message import MessageBuilder
 from src.message import MessageParser
 from src.TcpConnection import AsyncSocket
+from pyee import EventEmitter
 
 
 class Connection:
@@ -10,6 +11,7 @@ class Connection:
         self._ip_address = ip_address
         self._port = port
         self._auth_params = None
+        self.emitter = EventEmitter()
         self._state = Constants.CONNECTION_STATE_CLOSED
         self._client = client
         self._endpoint = None
@@ -29,7 +31,6 @@ class Connection:
         self._send(msg)
 
     def _send(self, data):
-        print("Sending: %s" % data)
         byte_message = str.encode(data)
         self._endpoint.send(byte_message)
 
@@ -43,16 +44,13 @@ class Connection:
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
-        self._endpoint._emitter.on('data', self._on_data)
+        self._endpoint.emitter.on('message', self._on_message)
         self._endpoint.start()
 
-    def _on_data(self, data):
-        messages = MessageParser.parse(data)
-
+    def _on_message(self, message):
+        messages = MessageParser.parse(message)
         for msg in messages:
-            print("Receiving %s" % msg)
             if msg["topic"] == Constants.TOPIC_AUTH:
                 self._handle_auth_response(msg)
             else:
-                print(data)
-                #self._client._on_message(msg)
+                self._client._on_message(msg)
