@@ -1,23 +1,34 @@
 from behave import *
-from src.Connection import Connection
-import json
+from src.DeepStreamClient import DeepStreamClient
+from src import Constants
 from tests.features import test_server
 
-s = test_server.MockServer('127.0.0.1', 6021)
-s.start()
+
+#background
+def background(context):
+    context.server = test_server.MockServer('127.0.0.1', 6021)
+    context.server.start()
+
+    context.client = DeepStreamClient('127.0.0.1', 6021)
+
+@given('the test server is ready')
+def step_impl(context):
+    assert context.server.is_ready
 
 @given('the client is initialised')
 def step_impl(context):
-    context.conn = Connection(None, "127.0.0.1", 6021)
-
-    assert (context.conn._ip_address == "127.0.0.1")
-    assert (context.conn._port == 6021)
+    assert context.client != None
 
 @when('the client logs in with username "XXX" and password "YYY"')
 def step_impl(context):
-    credentials = json.dumps({"username": "XXX", "password": "YYY"})
-    context.conn.authenicate(credentials)
+    context.client.login('XXX', 'YYY')
 
-@then('client receives the message A|A+')
+@then('the last message the server recieved is A|REQ|{"username":"XXX","password":"YYY"}+')
 def step_impl(context):
-    pass
+    last_msg = context.server.last_message
+    msg = Constants.TOPIC_AUTH + Constants.MESSAGE_PART_SEPARATOR + Constants.ACTIONS_REQUEST + Constants.MESSAGE_PART_SEPARATOR + "{\"username\":\"XXX\",\"password\":\"YYY\"}" + Constants.MESSAGE_SEPARATOR
+    assert last_msg == msg
+
+@then('the clients connection state is "AUTHENTICATING"')
+def step_impl(context):
+    assert  context.client.state == Constants.CONNECTION_STATE_AUTHENTICATING
