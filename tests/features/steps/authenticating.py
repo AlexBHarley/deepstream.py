@@ -31,4 +31,4 @@ def step_impl(context):
 
 @then('the clients connection state is "AUTHENTICATING"')
 def step_impl(context):
-    assert  context.client.state == Constants.CONNECTION_STATE_AUTHENTICATING
+    assert context.client.state == Constants.CONNECTION_STATE_AUTHENTICATING

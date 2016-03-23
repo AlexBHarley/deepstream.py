@@ -1,37 +1,33 @@
 import socket
+import threading
 
 
-class MockServer:
+class TestServer(threading.Thread):
+
     def __init__(self, ip, port):
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind((ip, port))
         self.is_ready = False
         self.last_socket = None
         self.connections = []
         self.all_messages = []
         self.last_message = b''
-        self.connection_count = 0
+        super(TestServer, self).__init__()
 
-    def start(self):
-        self.server.bind(("127.0.0.1", 6021))
-        self.server.listen(5)
-        self.is_ready = True
+    def run(self):
         while True:
-            self.server.accept()
-            data = self.server.recv(1024)
-            self.last_message = data
+            self.sock.listen(5)
+            self.sock.accept()
+            self.is_ready = True
+            try:
+                data = self.sock.recv(1024)
+                if not data:
+                    pass
+                self._on_data(data)
+            except Exception as e:
+                pass
 
-    def stop(self):
-        self.server.close()
-        self.is_ready = False
-        self.all_messages = []
-        self.last_message = ''
-        self.connection_count = 0
-
-    def send(self, message):
-        self.last_socket.write(message)
-
-    def bind_socket(self, sock):
-        self.connection_count += 1
-        self.last_socket = sock
-        self.connections.append(sock)
+    def _on_data(self, raw_data):
+        self.last_message = raw_data
+        self.all_messages += raw_data
 
