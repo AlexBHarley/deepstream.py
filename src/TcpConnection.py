@@ -32,11 +32,11 @@ class AsyncSocket(threading.Thread):
 
             try:
                 data = self.sock.recv(1024)
-                if not data:
-                    pass
-                self._on_data(data)
+                if data:
+                    self._on_data(data)
             except Exception as e:
-                pass
+                print(e)
+                self.sock.close()
 
     def send(self, msg):
         self.onThread(self._send, msg)
