@@ -14,6 +14,7 @@ class AsyncSocket(threading.Thread):
         self.timeout = 1
         self.emitter = EventEmitter()
         super(AsyncSocket, self).__init__()
+        self.setDaemon(True)
 
     def onThread(self, function, *args, **kwargs):
         self.q.put((function, args, kwargs))
@@ -48,3 +49,6 @@ class AsyncSocket(threading.Thread):
         #checks for valid data
         #buffer data
         self.emitter.emit('message', raw_data)
+
+    def _close(self):
+        self.join()

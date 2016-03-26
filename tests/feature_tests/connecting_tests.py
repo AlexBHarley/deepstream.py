@@ -8,7 +8,7 @@ import time
 class WhenConnectingAClient:
 
     def __init__(self):
-        self.server = TestServer('127.0.0.1', 5460)
+        self.server = TestServer('127.0.0.1', 5462)
 
     @setup
     def given_a_test_server(self):
@@ -22,21 +22,22 @@ class WhenConnectingAClient:
     @assertion
     def test_server_is_ready(self):
         assert self.server.is_ready == True
-    '''
+
     @assertion
     def server_has_no_active_connections(self):
-        assert (len(self.server_thread.server.connections) == 0)
-    '''
+        assert (len(self.server.connections) == 0)
+
 
 
     @assertion
     def client_is_initialised(self):
-        self.client = DeepStreamClient('127.0.0.1', 5460)
+        self.client = DeepStreamClient('127.0.0.1', 5462)
         assert (self.client != None)
 
     @teardown
     def teardown(self):
         self.server.stop()
+        #self.client._connection._endpoint.join()
         try:
             self.server_thread.join(1)
         except Exception:

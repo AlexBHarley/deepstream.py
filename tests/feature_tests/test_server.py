@@ -32,4 +32,4 @@ class TestServer:
 
     def stop(self):
         self.running = False
-        self.sock.close()
+        #self.sock.close()

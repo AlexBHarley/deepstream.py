@@ -54,3 +54,8 @@ class Connection:
                 self._handle_auth_response(msg)
             else:
                 self._client._on_message(msg)
+
+    def close(self):
+        print('Closing')
+        self._endpoint.join(1)
+        print(self._endpoint.is_alive())
