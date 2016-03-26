@@ -7,13 +7,13 @@ import threading
 class AsyncSocket(threading.Thread):
 
     def __init__(self, ip, port):
+        super(AsyncSocket, self).__init__()
         self.buffer = b''
         self.q = Queue()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((ip, port))
         self.timeout = 1
         self.emitter = EventEmitter()
-        super(AsyncSocket, self).__init__()
         self.setDaemon(True)
 
     def onThread(self, function, *args, **kwargs):
@@ -46,8 +46,8 @@ class AsyncSocket(threading.Thread):
         self.buffer += data
 
     def _on_data(self, raw_data):
-        #checks for valid data
-        #buffer data
+        #todo checks for valid data
+        #todo buffer data
         self.emitter.emit('message', raw_data)
 
     def _close(self):
