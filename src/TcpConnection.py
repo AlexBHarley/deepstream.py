@@ -36,8 +36,7 @@ class AsyncSocket(threading.Thread):
                 if data:
                     self._on_data(data)
             except Exception as e:
-                print(e)
-                self.sock.close()
+                pass
 
     def send(self, msg):
         self.onThread(self._send, msg)

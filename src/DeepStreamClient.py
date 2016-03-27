@@ -14,7 +14,7 @@ class DeepStreamClient:
         self.event = EventHandler(self._connection, self)
 
     def login(self, username, password):
-        credentials = json.dumps({"username": username, "password": password})
+        credentials = json.dumps({"username": username, "password": password}, sort_keys=True)
         self._connection.authenticate(credentials)
 
     def get_connection_state(self):
