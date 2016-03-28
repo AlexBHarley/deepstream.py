@@ -11,6 +11,7 @@ class Connection:
         self._ip_address = ip_address
         self._port = port
         self._auth_params = None
+        self._auth_callback = None
         self.emitter = EventEmitter()
         self.state = Constants.CONNECTION_STATE_CLOSED
         self._client = client
@@ -18,8 +19,9 @@ class Connection:
         self._create_endpoint()
         self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
 
-    def authenticate(self, auth_params):
+    def authenticate(self, auth_params, callback):
         self._auth_params = auth_params
+        self._auth_callback = callback
         self.state = Constants.CONNECTION_STATE_AUTHENTICATING
         self._send_auth_params()
 
@@ -36,8 +38,16 @@ class Connection:
         self._send(auth_message)
 
     def _handle_auth_response(self, message):
-        if message["action"] == Constants.ACTIONS_ACK:
+        if message["action"] == Constants.ACTIONS_ERROR:
+            if message["data"][0] == Constants.EVENT_TOO_MANY_AUTH_ATTEMPTS:
+                pass
+            else:
+                self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
+        elif message["action"] == Constants.ACTIONS_ACK:
             self.state = Constants.CONNECTION_STATE_OPEN
+
+            if self._auth_callback != None:
+                self._auth_callback(message["data"][0])
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
