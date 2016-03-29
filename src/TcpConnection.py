@@ -8,12 +8,13 @@ class AsyncSocket(threading.Thread):
 
     def __init__(self, ip, port):
         super(AsyncSocket, self).__init__()
+        self.emitter = EventEmitter()
         self.buffer = b''
         self.q = Queue()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((ip, port))
+        self.emitter.emit('open')
         self.timeout = 1
-        self.emitter = EventEmitter()
         self.setDaemon(True)
 
     def onThread(self, function, *args, **kwargs):

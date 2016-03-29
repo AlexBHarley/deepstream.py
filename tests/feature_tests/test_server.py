@@ -1,4 +1,5 @@
 import socket
+from src import Constants as C
 import threading
 
 
@@ -17,13 +18,15 @@ class TestServer:
         self.buffer = b''
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.settimeout(3)
+        self.sock.settimeout(1)
         self.sock.bind((ip, port))
 
     def handle_client(self, client):
         self.connection_count += 1
         try:
             data = client.recv(1024)
+            if data == str.encode("A" + C.MESSAGE_PART_SEPARATOR + "REQ" + C.MESSAGE_PART_SEPARATOR + "{\"password\": \"pass_too_many_auth\", \"username\": \"user_too_many_auth\"}" + C.MESSAGE_SEPARATOR):
+                self.send("A" + C.MESSAGE_PART_SEPARATOR + "E" + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_PART_SEPARATOR + "Stoo many authentication attempts" + C.MESSAGE_SEPARATOR)
             self.last_message = data
             self.all_messages += [data]
         except Exception as e:

@@ -79,18 +79,26 @@ class TestAuthenticatingAClient:
         time.sleep(1)
         assert client.get_connection_state() == C.CONNECTION_STATE_AWAITING_AUTHENTICATION
 
-        '''
-Scenario: The client's authentication data is rejected
-	Given the client is initialised
-	When the client logs in with username "XXX" and password "ZZZ"
-		But the server sends the message A|E|INVALID_AUTH_DATA|Sinvalid authentication data+
-	Then the last login failed with error "INVALID_AUTH_DATA" and message "invalid authentication data"
+    def test_client_receives_invalid_authentication_data(self):
+        client = DeepStreamClient("127.0.0.1", 9999)
+        credentials = {}
+        credentials["username"] = "XXX"
+        credentials["password"] = "YYY"
+        client.login(credentials, None)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "INVALID_AUTH_DATA" + C.MESSAGE_PART_SEPARATOR + "Sinvalid authentication data" + C.MESSAGE_SEPARATOR)
+        time.sleep(1)
+        assert client.get_connection_state() == C.CONNECTION_STATE_AWAITING_AUTHENTICATION
 
-Scenario: The client has made too many unsuccessful authentication attempts
-	Given the client is initialised
-	When the client logs in with username "XXX" and password "ZZZ"
-		But the server sends the message A|E|TOO_MANY_AUTH_ATTEMPTS|Stoo many authentication attempts+
-	Then the last login failed with error "TOO_MANY_AUTH_ATTEMPTS" and message "too many authentication attempts"
+    def test_client_made_too_many_unsuccessful_authentication_attempts(self):
+        client = DeepStreamClient("127.0.0.1", 9999)
+        credentials = {}
+        credentials["username"] = "user_too_many_auth"
+        credentials["password"] = "pass_too_many_auth"
+        client.login(credentials, None)
+        time.sleep(1)
+        assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
+
+        '''
 
 Scenario: The client can't made further authentication attempts after it received TOO_MANY_AUTH_ATTEMPTS
 	Given the server resets its message count
