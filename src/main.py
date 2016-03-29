@@ -8,15 +8,18 @@ def show(data):
     print(data)
 
 
-server = TestServer("127.0.0.1", 6767)
+server = TestServer("127.0.0.1", 9999)
 server_thread = threading.Thread(target=server.start_listening)
 server_thread.setDaemon(True)
 server_thread.start()
 
-client = DeepStreamClient("127.0.0.1", 6767)
+client = DeepStreamClient("127.0.0.1", 9999)
 credentials = {}
-credentials["username"] = "user_too_many_auth"
-credentials["password"] = "pass_too_many_auth"
-client.login(credentials, show)
+credentials["username"] = "XXX"
+credentials["password"] = "YYY"
+client.login(credentials, None)
 time.sleep(1)
-assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
+msg = server.last_message
+auth_msg = C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_REQUEST + C.MESSAGE_PART_SEPARATOR + "{\"password\": \"YYY\", \"username\": \"XXX\"}" + C.MESSAGE_SEPARATOR
+assert msg == str.encode(auth_msg)
+client._connection.close()
