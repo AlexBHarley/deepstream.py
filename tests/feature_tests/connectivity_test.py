@@ -111,10 +111,8 @@ class TestAuthenticatingAClient:
         time.sleep(1)
         self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_SEPARATOR)
         time.sleep(1)
-
         with pytest.raises(Exception) as excinfo:
             client.login(credentials, None)
-
         assert 'client\'s connection was closed' in str(excinfo.value)
 
     @classmethod
