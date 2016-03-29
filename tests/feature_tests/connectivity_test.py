@@ -122,5 +122,3 @@ class TestAuthenticatingAClient:
             cls.server_thread.join(1)
         except Exception as e:
             print(e)
-
-
