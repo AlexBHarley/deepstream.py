@@ -125,12 +125,4 @@ class TestAuthenticatingAClient:
         except Exception as e:
             print(e)
 
-        '''
-
-Scenario: The client can't made further authentication attempts after it received TOO_MANY_AUTH_ATTEMPTS
-	Given the server resets its message count
-	When the client logs in with username "XXX" and password "ZZZ"
-	Then the server has received 0 messages
-		And the client throws a "IS_CLOSED" error with message "this client's connection was closed"
-        '''
 
