@@ -1,8 +1,8 @@
 from tests.feature_tests.test_server import TestServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
-from src.message import MessageBuilder
 
+import pytest
 import threading
 import time
 
@@ -98,22 +98,31 @@ class TestAuthenticatingAClient:
         credentials["password"] = "pass_too_many_auth"
         client.login(credentials, None)
         time.sleep(1)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_SEPARATOR)
         assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
         client._connection.close()
 
-        '''
+    def test_client_cant_connect_after_TOO_MANY_AUTH_ATTEMPTS(self):
+        client = DeepStreamClient("127.0.0.1", 9999)
+        credentials = {}
+        credentials["username"] = "user_too_many_auth"
+        credentials["password"] = "pass_too_many_auth"
+        client.login(credentials, None)
+        time.sleep(1)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_SEPARATOR)
+        time.sleep(1)
 
-Scenario: The client can't made further authentication attempts after it received TOO_MANY_AUTH_ATTEMPTS
-	Given the server resets its message count
-	When the client logs in with username "XXX" and password "ZZZ"
-	Then the server has received 0 messages
-		And the client throws a "IS_CLOSED" error with message "this client's connection was closed"
-        '''
+        with pytest.raises(Exception) as excinfo:
+            client.login(credentials, None)
 
-        @classmethod
-        def teardown_class(cls):
-            cls.server.stop()
-            try:
-                cls.server_thread.join(1)
-            except Exception as e:
-                print(e)
+        assert 'client\'s connection was closed' in str(excinfo.value)
+
+    @classmethod
+    def teardown_class(cls):
+        cls.server.stop()
+        try:
+            cls.server_thread.join(1)
+        except Exception as e:
+            print(e)
+
+
