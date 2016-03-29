@@ -1,8 +1,8 @@
 from tests.feature_tests.test_server import TestServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
-from src.message import MessageBuilder
 
+import pytest
 import threading
 import time
 
@@ -98,8 +98,24 @@ class TestAuthenticatingAClient:
         credentials["password"] = "pass_too_many_auth"
         client.login(credentials, None)
         time.sleep(1)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_SEPARATOR)
         assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
         client._connection.close()
+
+    def test_client_cant_connect_after_TOO_MANY_AUTH_ATTEMPTS(self):
+        client = DeepStreamClient("127.0.0.1", 9999)
+        credentials = {}
+        credentials["username"] = "user_too_many_auth"
+        credentials["password"] = "pass_too_many_auth"
+        client.login(credentials, None)
+        time.sleep(1)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_SEPARATOR)
+        time.sleep(1)
+
+        with pytest.raises(Exception) as excinfo:
+            client.login(credentials, None)
+
+        assert 'client\'s connection was closed' in str(excinfo.value)
 
     @classmethod
     def teardown_class(cls):

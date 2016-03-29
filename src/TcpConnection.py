@@ -41,7 +41,7 @@ class AsyncSocket(threading.Thread):
                 if data:
                     self._on_data(data)
             except Exception as e:
-                pass
+                self._on_close()
 
     def send(self, msg):
         self.onThread(self._send, msg)
@@ -53,6 +53,10 @@ class AsyncSocket(threading.Thread):
         #todo checks for valid data
         #todo buffer data
         self.emitter.emit('message', raw_data)
+
+    def _on_close(self):
+        self.emitter.emit('close')
+        self.join()
 
     def _close(self):
         self.join()

@@ -70,7 +70,15 @@ class Connection:
         self._endpoint = AsyncSocket(self._ip_address, self._port)
         self._endpoint.emitter.on('message', self._on_message)
         self._endpoint.emitter.on('open', self._on_open())
+        self._endpoint.emitter.on('close', self._on_close())
         self._endpoint.start()
+
+    def _on_close(self):
+        if self._deliberate_close:
+            self.state = Constants.CONNECTION_STATE_CLOSED
+        else:
+            #todo try reconnect the connection
+            pass
 
     def _on_open(self):
         self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
