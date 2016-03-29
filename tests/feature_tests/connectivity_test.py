@@ -101,6 +101,14 @@ class TestAuthenticatingAClient:
         assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
         client._connection.close()
 
+    @classmethod
+    def teardown_class(cls):
+        cls.server.stop()
+        try:
+            cls.server_thread.join(1)
+        except Exception as e:
+            print(e)
+
         '''
 
 Scenario: The client can't made further authentication attempts after it received TOO_MANY_AUTH_ATTEMPTS
@@ -110,10 +118,3 @@ Scenario: The client can't made further authentication attempts after it receive
 		And the client throws a "IS_CLOSED" error with message "this client's connection was closed"
         '''
 
-        @classmethod
-        def teardown_class(cls):
-            cls.server.stop()
-            try:
-                cls.server_thread.join(1)
-            except Exception as e:
-                print(e)
