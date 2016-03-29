@@ -78,6 +78,7 @@ class TestAuthenticatingAClient:
         self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "INVALID_AUTH_MSG" + C.MESSAGE_PART_SEPARATOR + "Sinvalid" + C.MESSAGE_SEPARATOR)
         time.sleep(1)
         assert client.get_connection_state() == C.CONNECTION_STATE_AWAITING_AUTHENTICATION
+        client._connection.close()
 
     def test_client_receives_invalid_authentication_data(self):
         client = DeepStreamClient("127.0.0.1", 9999)
@@ -88,6 +89,7 @@ class TestAuthenticatingAClient:
         self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ERROR + C.MESSAGE_PART_SEPARATOR + "INVALID_AUTH_DATA" + C.MESSAGE_PART_SEPARATOR + "Sinvalid authentication data" + C.MESSAGE_SEPARATOR)
         time.sleep(1)
         assert client.get_connection_state() == C.CONNECTION_STATE_AWAITING_AUTHENTICATION
+        client._connection.close()
 
     def test_client_made_too_many_unsuccessful_authentication_attempts(self):
         client = DeepStreamClient("127.0.0.1", 9999)
@@ -97,6 +99,7 @@ class TestAuthenticatingAClient:
         client.login(credentials, None)
         time.sleep(1)
         assert client.get_connection_state() == C.CONNECTION_STATE_AUTHENTICATING
+        client._connection.close()
 
         '''
 
@@ -105,12 +108,12 @@ Scenario: The client can't made further authentication attempts after it receive
 	When the client logs in with username "XXX" and password "ZZZ"
 	Then the server has received 0 messages
 		And the client throws a "IS_CLOSED" error with message "this client's connection was closed"
-    '''
+        '''
 
-    @classmethod
-    def teardown_class(cls):
-        cls.server.stop()
-        try:
-            cls.server_thread.join(1)
-        except Exception as e:
-            print(e)
+        @classmethod
+        def teardown_class(cls):
+            cls.server.stop()
+            try:
+                cls.server_thread.join(1)
+            except Exception as e:
+                print(e)
