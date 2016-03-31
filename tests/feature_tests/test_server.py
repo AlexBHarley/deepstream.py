@@ -11,6 +11,7 @@ class TestServer:
         self.running = False
         self.connection_count = 0
         self.connections = []
+        self.handle_threads = []
         self.all_messages = []
         self.ip = ip
         self.port = port
@@ -23,14 +24,15 @@ class TestServer:
 
     def handle_client(self, client):
         self.connection_count += 1
-        try:
-            data = client.recv(1024)
-            if data == str.encode("A" + C.MESSAGE_PART_SEPARATOR + "REQ" + C.MESSAGE_PART_SEPARATOR + "{\"password\": \"pass_too_many_auth\", \"username\": \"user_too_many_auth\"}" + C.MESSAGE_SEPARATOR):
-                self.send("A" + C.MESSAGE_PART_SEPARATOR + "E" + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_PART_SEPARATOR + "Stoo many authentication attempts" + C.MESSAGE_SEPARATOR)
-            self.last_message = data
-            self.all_messages += [data]
-        except Exception as e:
-            pass
+        while True:
+            try:
+                data = client.recv(1024)
+                if data == str.encode("A" + C.MESSAGE_PART_SEPARATOR + "REQ" + C.MESSAGE_PART_SEPARATOR + "{\"password\": \"pass_too_many_auth\", \"username\": \"user_too_many_auth\"}" + C.MESSAGE_SEPARATOR):
+                    self.send("A" + C.MESSAGE_PART_SEPARATOR + "E" + C.MESSAGE_PART_SEPARATOR + "TOO_MANY_AUTH_ATTEMPTS" + C.MESSAGE_PART_SEPARATOR + "Stoo many authentication attempts" + C.MESSAGE_SEPARATOR)
+                self.last_message = data
+                self.all_messages += [data]
+            except Exception as e:
+                pass
 
     def start_listening(self):
         self.sock.listen(5)
@@ -43,7 +45,10 @@ class TestServer:
             try:
                 client, addr = self.sock.accept()
                 self.connections += [client]
-                self.handle_client(client)
+                handle_thread = threading.Thread(target=self.handle_client, args=(client,))
+                self.handle_threads += [handle_thread]
+                handle_thread.setDaemon(True)
+                handle_thread.start()
             except Exception as e:
                 pass
 
@@ -54,4 +59,10 @@ class TestServer:
         self.running = False
         for c in self.connections:
             c.close()
+        for c in self.handle_threads:
+            try:
+                c.join(1)
+            except Exception as e:
+                print('here')
+
         self.sock.close()

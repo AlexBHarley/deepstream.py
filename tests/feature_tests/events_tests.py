@@ -20,17 +20,14 @@ class TestEvents:
         credentials["username"] = "XXX"
         credentials["password"] = "YYY"
         client.login(credentials, None)
-        x = ''
-
-        def catch(msg):
-            x = msg
-
-        client.event.subscribe("test1", catch)
-
+        time.sleep(1)
+        self.server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_SEPARATOR)
+        time.sleep(1)
+        client.event.subscribe("test1", None)
+        time.sleep(1)
         assert self.server.last_message == str.encode(C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
 
         self.server.send(C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
-        assert x == "test1"
 
     @classmethod
     def teardown_class(cls):

@@ -19,7 +19,10 @@ class AckTimeoutRegister:
         :param name: Name of the occurrence to add to the registry
         :param action: Type of action it is (event etc)
         """
+        '''
         unique_name = action + "-" + name if action is not None else name
+        '''
+        unique_name = name
         if unique_name in self._register:
             self.clear({"data": [unique_name]})
         self._register[unique_name] = Timer(self._timeout_duration, self._on_timeout, args=(unique_name,))

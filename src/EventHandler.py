@@ -8,7 +8,7 @@ class EventHandler:
         self._connection = connection
         self._emitter = EventEmitter()
         self._client = client
-        self._ack_timeout_register = AckTimeoutRegister(self._client, C.TOPIC_EVENT, 5)
+        self._ack_timeout_register = AckTimeoutRegister(self._client, C.TOPIC_EVENT, 60)
 
     def handle(self, message):
         if len(message['data']) == 2: #ack

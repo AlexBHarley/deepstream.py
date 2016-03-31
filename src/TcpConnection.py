@@ -18,7 +18,7 @@ class AsyncSocket(threading.Thread):
             time.sleep(0.5)
             self.sock.connect((ip, port))
         self.emitter.emit('open')
-        self.timeout = 1
+        self.timeout = 5
         self.setDaemon(True)
 
     def onThread(self, function, *args, **kwargs):
@@ -34,6 +34,7 @@ class AsyncSocket(threading.Thread):
 
             if self.buffer != b'':
                 self.sock.sendall(self.buffer)
+                print(b"Buffer: " + self.buffer)
                 self.buffer = b''
 
             try:
