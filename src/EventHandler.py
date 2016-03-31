@@ -21,7 +21,6 @@ class EventHandler:
     def subscribe(self, event_name, callback):
         self._ack_timeout_register.add(event_name, C.ACTIONS_SUBSCRIBE)
         self._emitter.on(event_name, callback)
-        print('here')
         self._connection.send_message(C.TOPIC_EVENT, C.ACTIONS_SUBSCRIBE, [event_name])
 
 
