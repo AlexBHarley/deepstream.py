@@ -5,64 +5,6 @@ import time
 import threading
 
 
-class DummyServer:
-
-    def __init__(self, ip, port):
-        self.is_ready = True
-        self.last_socket = None
-        self.running = False
-        self.connection_count = 0
-        self.connections = []
-        self.handle_threads = []
-        self.all_messages = []
-        self.ip = ip
-        self.port = port
-        self.last_message = b''
-        self.buffer = b''
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.settimeout(1)
-        self.sock.bind((ip, port))
-
-    @asyncio.coroutine
-    def handle(self):
-        print('Trying to handle')
-        if self._receive != '':
-            print('Handling' + self._receive)
-        self._receive = ''
-        time.sleep(1)
-        asyncio.async(self.handle())
-
-    @asyncio.coroutine
-    def send(self):
-        print('Trying to send')
-        if self._buffer != b'':
-            print('Sending' + self._buffer)
-        self._buffer = ''
-        time.sleep(1)
-        asyncio.async(self.send())
-
-    def start(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            print('step: loop.run_until_complete()')
-            asyncio.async(self.send())
-            asyncio.async(self.handle())
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        except Exception as e:
-            print(e)
-        finally:
-            print('step: loop.close()')
-            loop.close()
-
-    def _add_to_buffer(self, data):
-        self._buffer += str.encode(data)
-
-    def add_to_receive(self, data):
-        self._receive += data
 
 class TestServer:
 
@@ -127,3 +69,54 @@ class TestServer:
                 print('here')
 
         self.sock.close()
+
+class DummyServer(asyncio.Protocol):
+
+    def __init__(self, ip, port):
+        self.is_ready = True
+        self.last_socket = None
+        self.running = False
+        self.connection_count = 0
+        self.connections = []
+        self.handle_threads = []
+        self.all_messages = []
+        self.ip = ip
+        self.port = port
+        self.last_message = b''
+        self.buffer = b''
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.settimeout(1)
+        self.sock.bind((ip, port))
+
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def data_received(self, data):
+        message = data.decode()
+        print(message)
+        try:
+            pass
+            #self.transport.write()
+        except:
+            pass
+
+    def start(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        coro = loop.create_server(DummyServer,
+                                  self.ip, self.port)
+        server = loop.run_until_complete(coro)
+        print("Listening on port {}".format(self.port))
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            print("Shutdown.")
+        finally:
+            server.close()
+            loop.run_until_complete(server.wait_closed())
+            loop.close()
+            print("Exiting")
+        return 0
+
+
