@@ -69,7 +69,7 @@ class TestServer:
                 print('here')
 
         self.sock.close()
-
+'''
 class DummyServer(asyncio.Protocol):
 
     def __init__(self, ip, port):
@@ -84,10 +84,6 @@ class DummyServer(asyncio.Protocol):
         self.port = port
         self.last_message = b''
         self.buffer = b''
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.settimeout(1)
-        self.sock.bind((ip, port))
 
     def connection_made(self, transport):
         self.transport = transport
@@ -118,5 +114,39 @@ class DummyServer(asyncio.Protocol):
             loop.close()
             print("Exiting")
         return 0
+'''
+class DummyServer(asyncio.Protocol):
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
 
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def data_received(self, data):
+        message = data.decode()
+        print(message)
+        try:
+            pass
+            #self.transport.write()
+        except:
+            pass
+
+    def start(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        coro = loop.create_server(DummyServer,
+                                  self.ip, self.port)
+        server = loop.run_until_complete(coro)
+        print("Listening on port {}".format(self.port))
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            print("Shutdown.")
+        finally:
+            server.close()
+            loop.run_until_complete(server.wait_closed())
+            loop.close()
+            print("Exiting")
+        return 0
 

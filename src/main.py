@@ -1,25 +1,42 @@
 from src.DeepStreamClient import DeepStreamClient
-from tests.feature_tests.test_server import TestServer
+from tests.feature_tests.test_server import DummyServer
 from src import Constants as C
-import threading
 import time
+import socket
+import threading
 
-def show(data):
-    print(data)
 
+e = DummyServer('127.0.0.1', 6379)
+t = threading.Thread(target=e.start)
+t.setDaemon(True)
+t.start()
+time.sleep(1)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    s.connect(('127.0.0.1', 6379))
+    s.send(b'hello')
+    print(s.recv(1024))
+    time.sleep(1)
+    s.send(b'hey there')
+except Exception as e:
+    print(e)
+time.sleep(3)
+print('End')
 
-server = TestServer("127.0.0.1", 9999)
-server_thread = threading.Thread(target=server.start_listening)
-server_thread.setDaemon(True)
-server_thread.start()
-
+'''
 client = DeepStreamClient("127.0.0.1", 9999)
 credentials = {}
 credentials["username"] = "XXX"
 credentials["password"] = "YYY"
 client.login(credentials, None)
 time.sleep(1)
-msg = server.last_message
-auth_msg = C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_REQUEST + C.MESSAGE_PART_SEPARATOR + "{\"password\": \"YYY\", \"username\": \"XXX\"}" + C.MESSAGE_SEPARATOR
-assert msg == str.encode(auth_msg)
-client._connection.close()
+server.send(C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_SEPARATOR)
+time.sleep(1)
+client.event.subscribe("test1", None)
+time.sleep(5)
+assert server.last_message == str.encode(C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
+print('hereeeeee')
+
+server.stop()
+server_thread.join(1)
+'''
