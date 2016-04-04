@@ -1,4 +1,4 @@
-from tests.feature_tests.test_server import TestServer
+from tests.feature_tests.test_server import TServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
 
@@ -11,8 +11,8 @@ class TestConnectingAClient:
 
     @classmethod
     def setup_class(cls):
-        cls.server = TestServer("127.0.0.1", 9999)
-        cls.server_thread = threading.Thread(target=cls.server.start_listening)
+        cls.server = TServer("127.0.0.1", 9999)
+        cls.server_thread = threading.Thread(target=cls.server.initialise_server)
         cls.server_thread.setDaemon(True)
         cls.server_thread.start()
 

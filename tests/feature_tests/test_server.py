@@ -4,7 +4,7 @@ import asyncio
 import time
 import threading
 
-
+'''
 
 class TestServer:
 
@@ -70,92 +70,39 @@ class TestServer:
 
         self.sock.close()
 '''
-class DummyServer(asyncio.Protocol):
+
+class TServer:
 
     def __init__(self, ip, port):
-        self.is_ready = True
-        self.last_socket = None
-        self.running = False
-        self.connection_count = 0
-        self.connections = []
-        self.handle_threads = []
-        self.all_messages = []
         self.ip = ip
         self.port = port
+        self.connection_count = 0
+        self.all_messages = []
         self.last_message = b''
-        self.buffer = b''
 
-    def connection_made(self, transport):
-        self.transport = transport
+    @asyncio.coroutine
+    def initialise_server(self):
+        yield from asyncio.start_server(self.client_connected_handler, self.ip, self.port)
 
-    def data_received(self, data):
-        message = data.decode()
-        print(message)
-        try:
-            pass
-            #self.transport.write()
-        except:
-            pass
+    @asyncio.coroutine
+    def client_connected_handler(self, client_reader, client_writer):
+        print("Connection received!")
+        self.connection_count += 1
+        while True:
+            data = yield from client_reader.read(8192)
+            if not data:
+                break
+            self.last_message = data
+            self.all_messages += [data]
+            print(b'Receiving ' + data)
 
     def start(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        coro = loop.create_server(DummyServer,
-                                  self.ip, self.port)
-        server = loop.run_until_complete(coro)
-        print("Listening on port {}".format(self.port))
+        print('Running')
+        loop.run_until_complete(self.initialise_server())
         try:
             loop.run_forever()
-        except KeyboardInterrupt:
-            print("Shutdown.")
         finally:
-            server.close()
-            loop.run_until_complete(server.wait_closed())
+            print('Closing')
             loop.close()
-            print("Exiting")
-        return 0
-'''
-class DummyServer(asyncio.Protocol):
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self.connection_count = 0
-        self.all_messages = []
-        self.last_message = b''
-
-    def connection_made(self, transport):
-        print(transport)
-        self.transport = transport
-
-    def data_received(self, data):
-        self.last_message = data
-        self.last_message += [data]
-        message = data.decode()
-        try:
-            self._send_response(data)
-        except:
-            pass
-
-    def begin(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        coro = loop.create_server(DummyServer,
-                                  self.ip, self.port)
-        server = loop.run_until_complete(coro)
-        print("Listening on port {}".format(self.port))
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            print("Shutdown.")
-        finally:
-            server.close()
-            loop.run_until_complete(server.wait_closed())
-            loop.close()
-            print("Exiting")
-        return 0
-
-    def _send_response(self, data):
-        print(data)
-
-        self.transport.write(data)
-
