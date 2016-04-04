@@ -119,20 +119,24 @@ class DummyServer(asyncio.Protocol):
     def __init__(self, ip, port):
         self.ip = ip
         self.port = port
+        self.connection_count = 0
+        self.all_messages = []
+        self.last_message = b''
 
     def connection_made(self, transport):
+        print(transport)
         self.transport = transport
 
     def data_received(self, data):
+        self.last_message = data
+        self.last_message += [data]
         message = data.decode()
-        print(message)
         try:
-            pass
-            #self.transport.write()
+            self._send_response(data)
         except:
             pass
 
-    def start(self):
+    def begin(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         coro = loop.create_server(DummyServer,
@@ -149,4 +153,9 @@ class DummyServer(asyncio.Protocol):
             loop.close()
             print("Exiting")
         return 0
+
+    def _send_response(self, data):
+        print(data)
+
+        self.transport.write(data)
 
