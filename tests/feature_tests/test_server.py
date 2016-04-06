@@ -4,7 +4,6 @@ import asyncio
 import time
 import threading
 
-'''
 
 class TestServer:
 
@@ -69,7 +68,7 @@ class TestServer:
                 print('here')
 
         self.sock.close()
-'''
+
 
 class TServer:
 
@@ -86,7 +85,6 @@ class TServer:
 
     @asyncio.coroutine
     def client_connected_handler(self, client_reader, client_writer):
-        print("Connection received!")
         self.connection_count += 1
         while True:
             data = yield from client_reader.read(8192)
@@ -94,15 +92,19 @@ class TServer:
                 break
             self.last_message = data
             self.all_messages += [data]
-            print(b'Receiving ' + data)
+            self.handle(data)
+
+    def handle(self, data):
+        msg = data.decode().split(C.MESSAGE_PART_SEPARATOR)
+        if msg[0] == "A":
+            #handle auth
+            pass
 
     def start(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        print('Running')
         loop.run_until_complete(self.initialise_server())
         try:
             loop.run_forever()
         finally:
-            print('Closing')
             loop.close()

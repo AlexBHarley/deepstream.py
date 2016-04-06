@@ -1,4 +1,4 @@
-from tests.feature_tests.test_server import TServer
+from tests.feature_tests.test_server import TServer, TestServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
 
@@ -12,7 +12,7 @@ class TestConnectingAClient:
     @classmethod
     def setup_class(cls):
         cls.server = TServer("127.0.0.1", 9999)
-        cls.server_thread = threading.Thread(target=cls.server.initialise_server)
+        cls.server_thread = threading.Thread(target=cls.server.start)
         cls.server_thread.setDaemon(True)
         cls.server_thread.start()
 
@@ -30,7 +30,6 @@ class TestConnectingAClient:
 
     @classmethod
     def teardown_class(cls):
-        cls.server.stop()
         try:
             cls.server_thread.join(1)
         except Exception as e:
@@ -41,8 +40,8 @@ class TestAuthenticatingAClient:
 
     @classmethod
     def setup_class(cls):
-        cls.server = TestServer("127.0.0.1", 9999)
-        cls.server_thread = threading.Thread(target=cls.server.start_listening)
+        cls.server = TServer("127.0.0.1", 9999)
+        cls.server_thread = threading.Thread(target=cls.server.start)
         cls.server_thread.setDaemon(True)
         cls.server_thread.start()
 

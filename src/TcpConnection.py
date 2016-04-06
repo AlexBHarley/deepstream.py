@@ -34,7 +34,6 @@ class AsyncSocket(threading.Thread):
 
             if self.buffer != b'':
                 self.sock.sendall(self.buffer)
-                print(b"Buffer: " + self.buffer)
                 self.buffer = b''
 
             try:
