@@ -110,6 +110,10 @@ class TServer:
                 event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
                 event_unsubscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_UNSUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
                 client.write(str.encode(event_unsubscribe_ack))
+            if msg[1] == C.ACTIONS_LISTEN:
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                event_listen_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_LISTEN + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+                client.write(str.encode(event_listen_ack))
 
     def start(self):
         loop = asyncio.new_event_loop()

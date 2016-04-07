@@ -6,6 +6,7 @@ import pytest
 import threading
 import time
 
+
 class TestEvents:
     @classmethod
     def setup_class(cls):
@@ -25,23 +26,37 @@ class TestEvents:
 
         client.event.subscribe("test1", None)
         time.sleep(1)
-        assert self.server.last_message == str.encode(C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
+        subscribe_message = str.encode(C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
+        assert self.server.last_message == subscribe_message
         client._connection.close()
-    '''
+
     def test_client_unsubscribes_to_event(self):
-        client = DeepStreamClient("127.0.0.1", 9999)
+        client = DeepStreamClient("127.0.0.1", 13999)
         credentials = {}
         credentials["username"] = "valid_username"
         credentials["password"] = "valid_password"
         client.login(credentials, None)
         time.sleep(1)
-
         client.event.unsubscribe("test1", None)
         time.sleep(1)
         assert self.server.last_message == str.encode(
             C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_UNSUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR)
         client._connection.close()
-    '''
+
+    def test_client_listens_to_event_prefix(self):
+        client = DeepStreamClient("127.0.0.1", 13999)
+        credentials = {}
+        credentials["username"] = "valid_username"
+        credentials["password"] = "valid_password"
+        client.login(credentials, None)
+        time.sleep(1)
+        client.event.listen("regex/\*", None)
+        time.sleep(1)
+        assert self.server.last_message == str.encode(
+            C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_LISTEN + C.MESSAGE_PART_SEPARATOR + "regex/\*" + C.MESSAGE_SEPARATOR
+        )
+        client._connection.close()
+
     @classmethod
     def teardown_class(cls):
         try:
