@@ -23,4 +23,8 @@ class EventHandler:
         self._emitter.on(event_name, callback)
         self._connection.send_message(C.TOPIC_EVENT, C.ACTIONS_SUBSCRIBE, [event_name])
 
+    def unsubscribe(self, event_name, callback):
+        self._emitter.remove_all_listeners(event_name)
+        self._ack_timeout_register.add(event_name, C.ACTIONS_UNSUBSCRIBE)
+        self._connection.send_message(C.TOPIC_EVENT, C.ACTIONS_UNSUBSCRIBE, [event_name])
 

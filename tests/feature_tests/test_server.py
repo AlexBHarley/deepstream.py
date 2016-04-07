@@ -3,7 +3,7 @@ from src import Constants as C
 import asyncio
 import time
 import threading
-
+import ast
 
 class TestServer:
 
@@ -92,13 +92,24 @@ class TServer:
                 break
             self.last_message = data
             self.all_messages += [data]
-            self.handle(data)
+            self.handle(data, client_writer)
 
-    def handle(self, data):
+    def handle(self, data, client):
         msg = data.decode().split(C.MESSAGE_PART_SEPARATOR)
         if msg[0] == "A":
-            #handle auth
-            pass
+            auth_data = ast.literal_eval(msg[2].split(C.MESSAGE_SEPARATOR)[0]) #auth_data as {"password": "valid_password", "username": "valid_username"}
+            if auth_data['password'] == 'valid_password' and auth_data['username'] == 'valid_username':
+                ack = (C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_SEPARATOR)
+                client.write(str.encode(ack))
+        elif msg[0] == 'E':
+            if msg[1] == 'S':
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                event_subscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+                client.write(event_subscribe_ack)
+            if msg[1] == 'US':
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                event_unsubscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_UNSUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+                client.write(event_unsubscribe_ack)
 
     def start(self):
         loop = asyncio.new_event_loop()

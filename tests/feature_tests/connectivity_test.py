@@ -40,8 +40,8 @@ class TestAuthenticatingAClient:
 
     @classmethod
     def setup_class(cls):
-        cls.server = TServer("127.0.0.1", 9999)
-        cls.server_thread = threading.Thread(target=cls.server.start)
+        cls.server = TestServer("127.0.0.1", 9999)
+        cls.server_thread = threading.Thread(target=cls.server.start_listening)
         cls.server_thread.setDaemon(True)
         cls.server_thread.start()
 
