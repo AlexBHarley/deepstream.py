@@ -11,6 +11,9 @@ class EventHandler:
         self._ack_timeout_register = AckTimeoutRegister(self._client, C.TOPIC_EVENT, 60)
 
     def handle(self, message):
+        if message['action'] == C.ACTIONS_ACK:
+            self._ack_timeout_register.clear(message)
+
         if len(message['data']) == 2: #ack
             name = message['data'][1]
             self._emitter.emit(name)

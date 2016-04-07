@@ -105,11 +105,11 @@ class TServer:
             if msg[1] == 'S':
                 event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
                 event_subscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
-                client.write(event_subscribe_ack)
+                client.write(str.encode(event_subscribe_ack))
             if msg[1] == 'US':
                 event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
                 event_unsubscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_UNSUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
-                client.write(event_unsubscribe_ack)
+                client.write(str.encode(event_unsubscribe_ack))
 
     def start(self):
         loop = asyncio.new_event_loop()

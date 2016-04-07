@@ -29,7 +29,8 @@ class AckTimeoutRegister:
         self._register[unique_name].start()
 
     def clear(self, event_data):
-        timeout = self._register[event_data]
+        name = event_data['data'][1]
+        timeout = self._register[name]
         if timeout is not None:
             timeout.cancel()
         else:

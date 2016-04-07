@@ -9,13 +9,14 @@ import time
 class TestEvents:
     @classmethod
     def setup_class(cls):
-        cls.server = TServer("127.0.0.1", 9999)
+        cls.server = TServer("127.0.0.1", 13999)
         cls.server_thread = threading.Thread(target=cls.server.start)
         cls.server_thread.setDaemon(True)
         cls.server_thread.start()
 
     def test_client_subscribes_to_event(self):
-        client = DeepStreamClient("127.0.0.1", 9999)
+        time.sleep(1)
+        client = DeepStreamClient("127.0.0.1", 13999)
         credentials = {}
         credentials["username"] = "valid_username"
         credentials["password"] = "valid_password"
