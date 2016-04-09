@@ -13,6 +13,13 @@ class Listener:
         self._ack_timeout.start()
         self._listen()
 
+    def destroy(self):
+        self._connection.send_message(self._type, C.ACTIONS_UNLISTEN, [self._pattern])
+        self._callback = None
+        self._connection = None
+        self._pattern = None
+        self._client = None
+
     def _listen(self):
         self._connection.send_message(self._type, C.ACTIONS_LISTEN, [self._pattern])
 
