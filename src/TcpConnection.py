@@ -1,28 +1,34 @@
-import socket
+import socket, errno
 from pyee import EventEmitter
 from queue import Queue
 import threading
 import time
 
 
-class AsyncSocket(EventEmitter, threading.Thread):
+class AsyncSocket(threading.Thread):
 
     def __init__(self, ip, port):
         super().__init__()
+        self._ip = ip
+        self._port = port
         self.buffer = b''
         self.q = Queue()
+        self.emitter = EventEmitter()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.sock.connect((ip, port))
-        except:
-            time.sleep(0.5)
-            self.sock.connect((ip, port))
-        self.emit('open')
+        self.emitter.emit('open')
         self.timeout = 5
         self.setDaemon(True)
 
     def onThread(self, function, *args, **kwargs):
         self.q.put((function, args, kwargs))
+
+    def start(self):
+        try:
+            self.sock.connect((self._ip, self._port))
+        except (ConnectionRefusedError, socket.error) as e:
+            self._on_error(e)
+
+        super(AsyncSocket, self).start()
 
     def run(self):
         while True:
@@ -35,7 +41,7 @@ class AsyncSocket(EventEmitter, threading.Thread):
             if self.buffer != b'':
                 sent = self.sock.send(self.buffer)
                 if sent == 0:
-                    self.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
+                    self.emitter.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
                 self.buffer = b''
 
             try:
@@ -51,13 +57,22 @@ class AsyncSocket(EventEmitter, threading.Thread):
     def _send(self, data):
         self.buffer += data
 
+    def _on_error(self, e):
+        msg = ''
+        if e.errno == errno.ECONNREFUSED:
+            msg = 'Can\'t connect! Deepstream server unreachable'
+        else:
+            msg = e.strerror
+        self.emitter.emit('error', msg)
+
+
     def _on_data(self, raw_data):
         #todo checks for valid data
         #todo buffer data
-        self.emit('message', raw_data)
+        self.emitter.emit('message', raw_data)
 
     def _on_close(self):
-        self.emit('close')
+        self.emitter.emit('close')
         self.join()
 
     def _close(self):

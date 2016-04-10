@@ -2,12 +2,11 @@ from tests.feature_tests.test_server import TServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
 
-import pytest
 import threading
 import time
 
 
-class TestEvents:
+class TestEventConnection:
     @classmethod
     def setup_class(cls):
         cls.server = TServer("127.0.0.1", 13999)
@@ -16,6 +15,12 @@ class TestEvents:
         cls.server_thread.start()
 
     def test_client_subscribes_to_event(self):
+        '''
+        Scenario: The client subscribes to an event
+            Given the client subscribes to an event named "test1"
+            Then the last message the server received is E|S|test1+
+        	Then the server sends the message E|A|S|test1+
+        '''
         time.sleep(1)
         client = DeepStreamClient("127.0.0.1", 13999)
         credentials = {}
@@ -44,6 +49,12 @@ class TestEvents:
         client._connection.close()
 
     def test_client_listens_to_event_prefix(self):
+        '''
+        Scenario: The client listens to eventPrefix
+            When the client listens to events matching "eventPrefix/.*"
+            Then the last message the server received is E|L|eventPrefix/.*+
+	        Then the server sends the message E|A|L|eventPrefix/.*+
+	    '''
         client = DeepStreamClient("127.0.0.1", 13999)
         credentials = {}
         credentials["username"] = "valid_username"
@@ -63,3 +74,36 @@ class TestEvents:
             cls.server_thread.join(0)
         except Exception as e:
             print(e)
+
+'''
+
+
+
+
+Scenario: The client loses its connection to the server
+	When the connection to the server is lost
+	Given two seconds later
+	Then the client throws a "connectionError" error with message "Can't connect! Deepstream server unreachable on localhost:7777"
+		And the clients connection state is "RECONNECTING"
+
+Scenario: The client publishes an event
+	When the client publishes an event named "test1" with data "yetAnotherValue"
+	Then the server did not recieve any messages
+
+Scenario: The client reconnects to the server
+	When the connection to the server is reestablished
+	Then the clients connection state is "AUTHENTICATING"
+
+Scenario: The client successfully reconnects
+	Given the client logs in with username "XXX" and password "YYY"
+		And the server sends the message A|A+
+	Then the clients connection state is "OPEN"
+
+Scenario: The client resends the event subscription
+	Then the server received the message E|S|test1+
+
+Scenario: The client resends the event listen
+	Then the server received the message E|L|eventPrefix/.*+
+
+Scenario: The client sends offline events
+	Then the server received the message E|EVT|test1|SyetAnotherValue+'''

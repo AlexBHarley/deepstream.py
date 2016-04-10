@@ -65,10 +65,10 @@ class Connection:
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
-        self._endpoint.on('message', self._on_message)
-        self._endpoint.on('open', self._on_open())
-        self._endpoint.on('close', self._on_close())
-        self._endpoint.on('error', self._on_error)
+        self._endpoint.emitter.on('message', self._on_message)
+        self._endpoint.emitter.on('open', self._on_open())
+        self._endpoint.emitter.on('close', self._on_close())
+        self._endpoint.emitter.on('error', self._on_error)
         self._endpoint.start()
 
     def _on_close(self):

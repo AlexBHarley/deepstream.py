@@ -50,7 +50,7 @@ class EventHandler:
     def unlisten(self, pattern):
         if pattern in self._listeners:
             self._ack_timeout_register.add(pattern, C.ACTIONS_UNLISTEN)
-            #self._listeners[pattern].destroy()
+            self._listeners[pattern].destroy()
         else:
             self._client._on_error(C.TOPIC_EVENT, C.EVENT_NOT_LISTENING, pattern)
 
