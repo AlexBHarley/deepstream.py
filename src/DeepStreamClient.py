@@ -26,7 +26,7 @@ class DeepStreamClient:
         return self._connection.state
 
     def _on_error(self, topic, event, message):
-        print( '--- You can catch all deepstream errors by subscribing to the error event ---' )
+        print('--- You can catch all deepstream errors by subscribing to the error event ---')
         error_msg = event + ': ' + message
 
         if topic != '' or topic != None:

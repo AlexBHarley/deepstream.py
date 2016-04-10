@@ -2,8 +2,6 @@ from src import Constants
 from src.message import MessageBuilder
 from src.message import MessageParser
 from src.TcpConnection import AsyncSocket
-from pyee import EventEmitter
-
 
 class Connection:
 
@@ -14,7 +12,6 @@ class Connection:
         self._auth_callback = None
         self._deliberate_close = False
         self._too_many_auth_attempts = False
-        self.emitter = EventEmitter()
         self.state = Constants.CONNECTION_STATE_CLOSED
         self._client = client
         self._endpoint = None
@@ -27,7 +24,7 @@ class Connection:
         elif self._deliberate_close == True and self.state == Constants.CONNECTION_STATE_CLOSED:
             self._create_endpoint()
             self._deliberate_close = False
-            self._endpoint.emitter.once('open', self.authenticate(self._auth_params, self._auth_callback))
+            self._endpoint.once('open', self.authenticate(self._auth_params, self._auth_callback))
 
         self._auth_params = auth_params
         self._auth_callback = callback
@@ -68,9 +65,10 @@ class Connection:
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
-        self._endpoint.emitter.on('message', self._on_message)
-        self._endpoint.emitter.on('open', self._on_open())
-        self._endpoint.emitter.on('close', self._on_close())
+        self._endpoint.on('message', self._on_message)
+        self._endpoint.on('open', self._on_open())
+        self._endpoint.on('close', self._on_close())
+        self._endpoint.on('error', self._on_error)
         self._endpoint.start()
 
     def _on_close(self):
@@ -92,6 +90,9 @@ class Connection:
                 self._handle_auth_response(msg)
             else:
                 self._client._on_message(msg)
+
+    def _on_error(self, message):
+        self._client._on_error(None, Constants.CONNECTION_STATE_ERROR, message)
 
     def close(self):
         self._endpoint.join(1)

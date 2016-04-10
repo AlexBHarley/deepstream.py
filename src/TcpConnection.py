@@ -4,11 +4,11 @@ from queue import Queue
 import threading
 import time
 
-class AsyncSocket(threading.Thread):
+
+class AsyncSocket(EventEmitter, threading.Thread):
 
     def __init__(self, ip, port):
-        super(AsyncSocket, self).__init__()
-        self.emitter = EventEmitter()
+        super().__init__()
         self.buffer = b''
         self.q = Queue()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,7 +17,7 @@ class AsyncSocket(threading.Thread):
         except:
             time.sleep(0.5)
             self.sock.connect((ip, port))
-        self.emitter.emit('open')
+        self.emit('open')
         self.timeout = 5
         self.setDaemon(True)
 
@@ -33,7 +33,9 @@ class AsyncSocket(threading.Thread):
                 pass
 
             if self.buffer != b'':
-                self.sock.sendall(self.buffer)
+                sent = self.sock.send(self.buffer)
+                if sent == 0:
+                    self.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
                 self.buffer = b''
 
             try:
@@ -52,10 +54,10 @@ class AsyncSocket(threading.Thread):
     def _on_data(self, raw_data):
         #todo checks for valid data
         #todo buffer data
-        self.emitter.emit('message', raw_data)
+        self.emit('message', raw_data)
 
     def _on_close(self):
-        self.emitter.emit('close')
+        self.emit('close')
         self.join()
 
     def _close(self):
