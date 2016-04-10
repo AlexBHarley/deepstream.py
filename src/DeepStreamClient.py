@@ -4,6 +4,7 @@ import json
 from src.EventHandler import EventHandler
 from pyee import EventEmitter
 
+
 class DeepStreamClient:
 
     def __init__(self, ip, port):
@@ -26,7 +27,6 @@ class DeepStreamClient:
         return self._connection.state
 
     def _on_error(self, topic, event, message):
-
         print('======== You can catch all deepstream errors by subscribing to the error event ========')
         error_msg = event + ': ' + message
 
@@ -34,7 +34,6 @@ class DeepStreamClient:
             error_msg += ' (' + topic + ')'
 
         raise Exception(error_msg) from None
-
 
     def _on_message(self, message):
         if message["topic"] == Constants.TOPIC_EVENT:

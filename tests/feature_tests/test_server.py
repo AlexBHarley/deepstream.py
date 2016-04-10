@@ -19,6 +19,7 @@ class TestServer:
         self.port = port
         self.last_message = b''
         self.buffer = b''
+        self.loop = asyncio.new_event_loop()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.settimeout(1)
@@ -78,6 +79,9 @@ class TServer:
         self.connection_count = 0
         self.all_messages = []
         self.last_message = b''
+        self.loop = asyncio.new_event_loop()
+        self.running = True
+
 
     @asyncio.coroutine
     def initialise_server(self):
@@ -86,13 +90,12 @@ class TServer:
     @asyncio.coroutine
     def client_connected_handler(self, client_reader, client_writer):
         self.connection_count += 1
-        while True:
-            data = yield from client_reader.read(8192)
-            if not data:
-                break
-            self.last_message = data
-            self.all_messages += [data]
-            self.handle(data, client_writer)
+        while self.running:
+            data = yield from asyncio.wait_for(client_reader.read(8192), timeout=0.1)
+            if data:
+                self.last_message = data
+                self.all_messages += [data]
+                self.handle(data, client_writer)
 
     def handle(self, data, client):
         msg = data.decode().split(C.MESSAGE_PART_SEPARATOR)
@@ -116,10 +119,12 @@ class TServer:
                 client.write(str.encode(event_listen_ack))
 
     def start(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.initialise_server())
+        asyncio.set_event_loop(self.loop)
+        self.loop.run_until_complete(self.initialise_server())
         try:
-            loop.run_forever()
+            self.loop.run_forever()
         finally:
-            loop.close()
+            self.loop.close()
+
+    def stop(self):
+        self.running = False

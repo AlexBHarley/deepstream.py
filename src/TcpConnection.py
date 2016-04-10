@@ -19,7 +19,12 @@ class AsyncSocket(threading.Thread):
         self.timeout = 5
         self.setDaemon(True)
 
-    def onThread(self, function, *args, **kwargs):
+    def _on_thread(self, function, *args, **kwargs):
+        '''
+        This method and implementation is taken directly from the below stackoverflow link. Allows us to add messages
+        to the socket in its own thread.
+        http://stackoverflow.com/questions/19033818/how-to-call-a-function-on-a-running-python-thread
+        '''
         self.q.put((function, args, kwargs))
 
     def start(self):
@@ -27,7 +32,6 @@ class AsyncSocket(threading.Thread):
             self.sock.connect((self._ip, self._port))
         except (ConnectionRefusedError, socket.error) as e:
             self._on_error(e)
-
         super(AsyncSocket, self).start()
 
     def run(self):
@@ -35,8 +39,10 @@ class AsyncSocket(threading.Thread):
             try:
                 function, args, kwargs = self.q.get(timeout=self.timeout)
                 function(*args, **kwargs)
-            except:
+            except TimeoutError:
                 pass
+            except Exception as e:
+                self._on_error(e.args)
 
             if self.buffer != b'':
                 sent = self.sock.send(self.buffer)
@@ -52,19 +58,17 @@ class AsyncSocket(threading.Thread):
                 self._on_close()
 
     def send(self, msg):
-        self.onThread(self._send, msg)
+        self._on_thread(self._send, msg)
 
     def _send(self, data):
         self.buffer += data
 
     def _on_error(self, e):
-        msg = ''
         if e.errno == errno.ECONNREFUSED:
             msg = 'Can\'t connect! Deepstream server unreachable'
         else:
             msg = e.strerror
         self.emitter.emit('error', msg)
-
 
     def _on_data(self, raw_data):
         #todo checks for valid data
