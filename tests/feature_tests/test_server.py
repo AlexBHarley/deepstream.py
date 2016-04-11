@@ -4,6 +4,13 @@ import asyncio
 import time
 import threading
 import ast
+import time
+from tornado.ioloop import IOLoop
+from tornado.options import define, options
+from tornado import gen
+from tornado.iostream import StreamClosedError
+from tornado.tcpserver import TCPServer
+
 
 class TestServer:
 
@@ -128,3 +135,40 @@ class TServer:
 
     def stop(self):
         self.running = False
+
+define('port', default=8888, help="TCP port to use")
+define('server', default=False, help="Run as the echo server")
+define('encoding', default='utf-8', help="String encoding")
+
+class EchoServer(TCPServer):
+    clients = set()
+
+    @gen.coroutine
+    def handle_stream(self, stream, address):
+        ip, fileno = address
+        print("Incoming connection from " + ip)
+        EchoServer.clients.add(address)
+        while True:
+            try:
+                yield self.echo(stream)
+            except StreamClosedError:
+                print("Client " + str(address) + " left.")
+                EchoServer.clients.remove(address)
+                break
+
+    @gen.coroutine
+    def echo(self, stream):
+        data = yield stream.read_until('\n'.encode(options.encoding))
+        print('Echoing data: ' + repr(data))
+        yield stream.write(data)
+
+def start_server():
+    server = EchoServer()
+    server.listen(options.port, address='127.0.0.1')
+    print("Starting server")
+    IOLoop.instance().start()
+
+def stop_tornado():
+    ioloop = tornado.ioloop.IOLoop.instance()
+    ioloop.add_callback(ioloop.stop)
+    print("Asked Tornado to exit")
