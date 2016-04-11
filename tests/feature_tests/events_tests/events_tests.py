@@ -1,4 +1,4 @@
-from tests.feature_tests.test_server import TServer
+from tests.feature_tests.test_server import start_server, TestServer
 from src.DeepStreamClient import DeepStreamClient
 from src import Constants as C
 
@@ -9,9 +9,8 @@ import time
 class TestEventConnection:
     @classmethod
     def setup_class(cls):
-        cls.server = TServer("127.0.0.1", 13999)
-        cls.server_thread = threading.Thread(target=cls.server.start)
-        cls.server_thread.setDaemon(True)
+        cls.server = TestServer()
+        cls.server_thread = threading.Thread(target=start_server, args=(cls.server,))
         cls.server_thread.start()
 
     def test_client_subscribes_to_event(self):
@@ -22,7 +21,7 @@ class TestEventConnection:
         	Then the server sends the message E|A|S|test1+
         '''
         time.sleep(1)
-        client = DeepStreamClient("127.0.0.1", 13999)
+        client = DeepStreamClient("127.0.0.1", 8888)
         credentials = {}
         credentials["username"] = "valid_username"
         credentials["password"] = "valid_password"
@@ -71,7 +70,7 @@ class TestEventConnection:
     @classmethod
     def teardown_class(cls):
         try:
-            cls.server_thread.join(0)
+            cls.server_thread.join()
         except Exception as e:
             print(e)
 

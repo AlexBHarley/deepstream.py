@@ -4,7 +4,8 @@ import asyncio
 import time
 import threading
 import ast
-import time
+import tornado
+
 from tornado.ioloop import IOLoop
 from tornado.options import define, options
 from tornado import gen
@@ -12,7 +13,7 @@ from tornado.iostream import StreamClosedError
 from tornado.tcpserver import TCPServer
 
 
-class TestServer:
+class ff:
 
     def __init__(self, ip, port):
         self.is_ready = True
@@ -140,30 +141,55 @@ define('port', default=8888, help="TCP port to use")
 define('server', default=False, help="Run as the echo server")
 define('encoding', default='utf-8', help="String encoding")
 
-class EchoServer(TCPServer):
+
+class TestServer(TCPServer):
     clients = set()
+
+    def __init__(self):
+        super().__init__()
+        self.last_message = ''
+        self.connection_count = 0
+        self.all_messages = []
 
     @gen.coroutine
     def handle_stream(self, stream, address):
         ip, fileno = address
         print("Incoming connection from " + ip)
-        EchoServer.clients.add(address)
+        TestServer.clients.add(address)
         while True:
             try:
                 yield self.echo(stream)
             except StreamClosedError:
                 print("Client " + str(address) + " left.")
-                EchoServer.clients.remove(address)
+                TestServer.clients.remove(address)
                 break
 
     @gen.coroutine
     def echo(self, stream):
-        data = yield stream.read_until('\n'.encode(options.encoding))
-        print('Echoing data: ' + repr(data))
-        yield stream.write(data)
+        data = yield stream.read_until(C.MESSAGE_SEPARATOR.encode(options.encoding))
+        self.last_message = data
+        msg = data.decode().split(C.MESSAGE_PART_SEPARATOR)
+        ack = ''
+        if msg[0] == "A":
+            auth_data = ast.literal_eval(msg[2].split(C.MESSAGE_SEPARATOR)[
+                                             0])  # auth_data as {"password": "valid_password", "username": "valid_username"}
+            if auth_data['password'] == 'valid_password' and auth_data['username'] == 'valid_username':
+                ack = (C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_SEPARATOR)
+        elif msg[0] == 'E':
+            if msg[1] == 'S':
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+            if msg[1] == 'US':
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_UNSUBSCRIBE + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+            if msg[1] == C.ACTIONS_LISTEN:
+                event_name = msg[2].split(C.MESSAGE_SEPARATOR)[0]
+                ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_LISTEN + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
+        print('Echoing data: ' + ack)
+        yield stream.write(str.encode(ack))
 
-def start_server():
-    server = EchoServer()
+def start_server(test_server):
+    server = test_server
     server.listen(options.port, address='127.0.0.1')
     print("Starting server")
     IOLoop.instance().start()
