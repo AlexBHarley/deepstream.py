@@ -41,14 +41,20 @@ class AsyncSocket(threading.Thread):
                 function(*args, **kwargs)
             except TimeoutError:
                 pass
+            except Queue.empty:
+                pass
             except Exception as e:
                 self._on_error(e.args)
 
             if self.buffer != b'':
-                sent = self.sock.send(self.buffer)
-                if sent == 0:
-                    self.emitter.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
-                self.buffer = b''
+                try:
+                    sent = self.sock.send(self.buffer)
+                    if sent == 0:
+                        self.emitter.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
+                    self.buffer = b''
+                except Exception as e:
+
+                    self._on_error(e.args)
 
             try:
                 data = self.sock.recv(1024)
@@ -68,6 +74,7 @@ class AsyncSocket(threading.Thread):
             msg = 'Can\'t connect! Deepstream server unreachable'
         else:
             msg = e.strerror
+        print(msg)
         self.emitter.emit('error', msg)
 
     def _on_data(self, raw_data):

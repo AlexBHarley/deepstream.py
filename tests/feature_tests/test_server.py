@@ -6,6 +6,7 @@ import threading
 import ast
 import tornado
 
+from queue import Queue
 from tornado.ioloop import IOLoop
 from tornado.options import define, options
 from tornado import gen
@@ -142,7 +143,7 @@ define('server', default=False, help="Run as the echo server")
 define('encoding', default='utf-8', help="String encoding")
 
 
-class TestServer(TCPServer):
+class TestServer(threading.Thread, TCPServer):
     clients = set()
 
     def __init__(self):
@@ -150,6 +151,37 @@ class TestServer(TCPServer):
         self.last_message = ''
         self.connection_count = 0
         self.all_messages = []
+        self.stop_request = threading.Event()
+        self.action_q = Queue()
+
+    def run(self):
+        self.listen(options.port, address='127.0.0.1')
+        print("Starting server")
+        self.io_loop = IOLoop.instance()
+        self.io_loop.start()
+
+        while not self.stop_request.isSet():
+            try:
+                func_q, args, kwargs = self.action_q.get(timeout=0.01)
+                func_q(*args, **kwargs)
+            except Exception as e:
+                pass
+
+    def stop(self):
+        self.action_q.put(self.join, 0.01)
+
+    def join(self, timeout=None):
+        self.stop_request.set()
+        io_loop = tornado.ioloop.IOLoop.instance()
+        deadline = time.time() + 0.5
+        def stop_loop():
+            now = time.time()
+            if now < deadline:
+                io_loop.add_timeout(now + 0.1, stop_loop)
+            else:
+                io_loop.stop()
+        print("Asked Tornado to exit")
+        super(TestServer, self).join(timeout)
 
     @gen.coroutine
     def handle_stream(self, stream, address):
@@ -188,13 +220,33 @@ class TestServer(TCPServer):
         print('Echoing data: ' + ack)
         yield stream.write(str.encode(ack))
 
-def start_server(test_server):
-    server = test_server
-    server.listen(options.port, address='127.0.0.1')
-    print("Starting server")
-    IOLoop.instance().start()
 
-def stop_tornado():
-    ioloop = tornado.ioloop.IOLoop.instance()
-    ioloop.add_callback(ioloop.stop)
-    print("Asked Tornado to exit")
+class WorkerThread(threading.Thread):
+
+    def __init__(self, ip, port):
+        super(WorkerThread, self).__init__()
+        self.action_q = Queue()
+        self.stop_request = threading.Event()
+        self.last_message = b''
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock.settimeout(1)
+        self.sock.bind((ip, port))
+
+    def run(self):
+        self.sock.listen(5)
+        while not self.stop_request.isSet():
+
+            try:
+                func_q, args, kwargs = self.action_q.get(timeout=0.01)
+                func_q(*args, **kwargs)
+            except Exception as e:
+                pass
+
+    def stop(self):
+        self.action_q.put(self.join, 0.01)
+
+    def join(self, timeout=None):
+        self.stop_request.set()
+        super(WorkerThread, self).join(timeout)
+
