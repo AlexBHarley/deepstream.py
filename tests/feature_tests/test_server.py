@@ -138,55 +138,39 @@ class TServer:
     def stop(self):
         self.running = False
 
-define('port', default=8888, help="TCP port to use")
+define('port', default=8989, help="TCP port to use")
 define('server', default=False, help="Run as the echo server")
 define('encoding', default='utf-8', help="String encoding")
 
 
-class TestServer(threading.Thread, TCPServer):
+class TestServer(TCPServer):
     clients = set()
 
     def __init__(self):
-        super().__init__()
+
         self.last_message = ''
         self.connection_count = 0
         self.all_messages = []
         self.stop_request = threading.Event()
         self.action_q = Queue()
+        super().__init__()
 
     def run(self):
+        self.io_loop = IOLoop.instance()
         self.listen(options.port, address='127.0.0.1')
         print("Starting server")
-        self.io_loop = IOLoop.instance()
         self.io_loop.start()
 
-        while not self.stop_request.isSet():
-            try:
-                func_q, args, kwargs = self.action_q.get(timeout=0.01)
-                func_q(*args, **kwargs)
-            except Exception as e:
-                pass
+    def stop_server(self):
 
-    def stop(self):
-        self.action_q.put(self.join, 0.01)
-
-    def join(self, timeout=None):
-        self.stop_request.set()
-        io_loop = tornado.ioloop.IOLoop.instance()
-        deadline = time.time() + 0.5
-        def stop_loop():
-            now = time.time()
-            if now < deadline:
-                io_loop.add_timeout(now + 0.1, stop_loop)
-            else:
-                io_loop.stop()
-        print("Asked Tornado to exit")
-        super(TestServer, self).join(timeout)
+        self.io_loop.close()
+        self.stop()
 
     @gen.coroutine
     def handle_stream(self, stream, address):
         ip, fileno = address
         print("Incoming connection from " + ip)
+        print(stream)
         TestServer.clients.add(address)
         while True:
             try:
@@ -198,7 +182,8 @@ class TestServer(threading.Thread, TCPServer):
 
     @gen.coroutine
     def echo(self, stream):
-        data = yield stream.read_until(C.MESSAGE_SEPARATOR.encode(options.encoding))
+        data = yield stream.read_until(b'xx')#(C.MESSAGE_SEPARATOR.encode(options.encoding))
+        '''
         self.last_message = data
         msg = data.decode().split(C.MESSAGE_PART_SEPARATOR)
         ack = ''
@@ -219,34 +204,5 @@ class TestServer(threading.Thread, TCPServer):
                 ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.TOPIC_AUTH + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_LISTEN + C.MESSAGE_PART_SEPARATOR + event_name + C.MESSAGE_SEPARATOR
         print('Echoing data: ' + ack)
         yield stream.write(str.encode(ack))
-
-
-class WorkerThread(threading.Thread):
-
-    def __init__(self, ip, port):
-        super(WorkerThread, self).__init__()
-        self.action_q = Queue()
-        self.stop_request = threading.Event()
-        self.last_message = b''
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.settimeout(1)
-        self.sock.bind((ip, port))
-
-    def run(self):
-        self.sock.listen(5)
-        while not self.stop_request.isSet():
-
-            try:
-                func_q, args, kwargs = self.action_q.get(timeout=0.01)
-                func_q(*args, **kwargs)
-            except Exception as e:
-                pass
-
-    def stop(self):
-        self.action_q.put(self.join, 0.01)
-
-    def join(self, timeout=None):
-        self.stop_request.set()
-        super(WorkerThread, self).join(timeout)
-
+        '''
+        print(b'Receiving: ' + data)
