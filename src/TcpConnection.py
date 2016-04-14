@@ -1,8 +1,7 @@
 import socket, errno
 from pyee import EventEmitter
-from queue import Queue
+from queue import Queue, Empty
 import threading
-import time
 
 
 class AsyncSocket(threading.Thread):
@@ -14,6 +13,7 @@ class AsyncSocket(threading.Thread):
         self.buffer = b''
         self.q = Queue()
         self._is_open = False
+        self.is_runnning = False
         self.emitter = EventEmitter()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.emitter.emit('open')
@@ -37,13 +37,14 @@ class AsyncSocket(threading.Thread):
         super(AsyncSocket, self).start()
 
     def run(self):
-        while True:
+        self.is_runnning = True
+        while self.is_runnning:
             try:
                 function, args, kwargs = self.q.get(timeout=self.timeout)
                 function(*args, **kwargs)
             except TimeoutError:
                 pass
-            except Queue.empty:
+            except Empty:
                 pass
             except Exception as e:
                 self._on_error(e.args)
@@ -92,5 +93,7 @@ class AsyncSocket(threading.Thread):
         self.emitter.emit('close')
         self.join()
 
-    def _close(self):
-        self.join()
+    def close(self):
+        self._on_thread(self.sock.close)
+        self.is_runnning = False
+
