@@ -55,15 +55,14 @@ class Connection:
             else:
                 self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
 
-            if self._auth_callback != None:
-                self._auth_callback(message)
+            if self._auth_callback is not None:
+                self._auth_callback(False, message["data"][0], message["data"][1])
 
         elif message["action"] == Constants.ACTIONS_ACK:
             self.state = Constants.CONNECTION_STATE_OPEN
 
             if self._auth_callback is not None:
-                print(message)
-                self._auth_callback(message["data"][0])
+                self._auth_callback(True, None, None)
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
@@ -82,11 +81,11 @@ class Connection:
 
     def _on_open(self):
         self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
-        if self._auth_params != None:
+        if self._auth_params is not None:
             self._send_auth_params()
 
     def _on_message(self, message):
-        messages = MessageParser.parse(message)
+        messages = MessageParser.parse(message, self._client)
         for msg in messages:
             if msg["topic"] == Constants.TOPIC_AUTH:
                 self._handle_auth_response(msg)
@@ -97,4 +96,5 @@ class Connection:
         self._client._on_error(None, Constants.CONNECTION_STATE_ERROR, message)
 
     def close(self):
+        self._endpoint.close()
         self._endpoint.join(1)
