@@ -50,8 +50,8 @@ class AsyncSocket(threading.Thread):
 
             if self.buffer != b'':
                 if self._is_open:
-                    sent = self.sock.send(self.buffer)
-                    if sent == 0:
+                    sent = self.sock.sendall(self.buffer)
+                    if sent is not None:
                         self.emitter.emit('error', 'server connection has been closed')
                 else:
                     self.emitter.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
@@ -74,7 +74,6 @@ class AsyncSocket(threading.Thread):
             msg = 'Can\'t connect! Deepstream server unreachable'
         else:
             msg = e.strerror
-        print(msg)
         self.emitter.emit('error', msg)
 
     def _on_data(self, raw_data):

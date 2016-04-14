@@ -3,6 +3,7 @@ from src.message import MessageBuilder
 from src.message import MessageParser
 from src.TcpConnection import AsyncSocket
 
+
 class Connection:
 
     def __init__(self, client, ip_address=None, port=None):
@@ -21,7 +22,7 @@ class Connection:
         if self._too_many_auth_attempts:
             self._client._on_error(Constants.TOPIC_ERROR, Constants.EVENT_IS_CLOSED, 'this client\'s connection was closed')
             return
-        elif self._deliberate_close == True and self.state == Constants.CONNECTION_STATE_CLOSED:
+        elif self._deliberate_close is True and self.state == Constants.CONNECTION_STATE_CLOSED:
             self._create_endpoint()
             self._deliberate_close = False
             self._endpoint.once('open', self.authenticate(self._auth_params, self._auth_callback))
@@ -29,7 +30,7 @@ class Connection:
         self._auth_params = auth_params
         self._auth_callback = callback
 
-        if self.state == Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION and self._auth_params != None:
+        if self.state == Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION and self._auth_params is not None:
             self._send_auth_params()
 
     def send_message(self, event, action, data):
@@ -60,7 +61,8 @@ class Connection:
         elif message["action"] == Constants.ACTIONS_ACK:
             self.state = Constants.CONNECTION_STATE_OPEN
 
-            if self._auth_callback != None:
+            if self._auth_callback is not None:
+                print(message)
                 self._auth_callback(message["data"][0])
 
     def _create_endpoint(self):

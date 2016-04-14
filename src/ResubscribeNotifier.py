@@ -14,7 +14,7 @@ class ResubscribeNotifier:
         self._client = None
 
     def _connection_state_changed(self):
-        state = self._client.getConnectionState()
+        state = self._client.get_connection_state()
 
         if state == C.CONNECTION_STATE_RECONNECTING and self._is_reconnecting is False:
             self._is_reconnecting = True
