@@ -16,8 +16,7 @@ class AsyncSocket(threading.Thread):
         self.is_runnning = False
         self.emitter = EventEmitter()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.emitter.emit('open')
-        self.timeout = 5
+        self.timeout = 0.1
 
     def _on_thread(self, function, *args, **kwargs):
         '''
@@ -33,7 +32,9 @@ class AsyncSocket(threading.Thread):
         except (ConnectionRefusedError, socket.error) as e:
             self._on_error(e)
         self._is_open = True
-        super(AsyncSocket, self).start()
+        self.emitter.emit('open')
+        if not self.is_alive():
+            super(AsyncSocket, self).start()
 
     def run(self):
         self.is_runnning = True
@@ -48,13 +49,16 @@ class AsyncSocket(threading.Thread):
             except Exception as e:
                 self._on_error(e.args)
 
-            if self._is_open:
-                if self.buffer != b'':
+            if self.buffer != b'':
+                if self._is_open:
                     try:
                         sent = self.sock.sendall(self.buffer)
                         self.buffer = b''
-                    except (ConnectionRefusedError, socket.error):
-                        self._on_close()
+                    except (ConnectionRefusedError, socket.error) as e:
+                        self._on_error(e)
+                else:
+                    self._on_error("client's connection was closed")
+
             if self._is_open:
                 try:
                     data = self.sock.recv(1024)
@@ -70,11 +74,14 @@ class AsyncSocket(threading.Thread):
         self.buffer += data
 
     def _on_error(self, e):
-        if e.errno == errno.ECONNREFUSED:
-            msg = 'Can\'t connect! Deepstream server unreachable'
+        if isinstance(e, socket.error):
+            if e.errno == errno.ECONNREFUSED:
+                msg = 'Can\'t connect! Deepstream server unreachable'
+            else:
+                msg = e.strerror
+            self.emitter.emit('error', msg)
         else:
-            msg = e.strerror
-        self.emitter.emit('error', msg)
+            self.emitter.emit('error', e)
 
     def _on_data(self, raw_data):
         if not isinstance(raw_data, bytes):
@@ -92,8 +99,4 @@ class AsyncSocket(threading.Thread):
         self.sock.close()
         self._is_open = False
         self.emitter.emit('close')
-
-    def close(self):
-        self._on_thread(self.sock.close)
-        self.is_runnning = False
 

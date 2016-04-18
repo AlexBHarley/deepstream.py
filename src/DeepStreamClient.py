@@ -30,6 +30,10 @@ class DeepStreamClient:
         print('======== You can catch all deepstream errors by subscribing to the error event ========')
         error_msg = event + ': ' + message
 
+        if len(self.emitter.listeners('error')) != 0:
+            self.emitter.emit('error', message, event, topic)
+            self.emitter.emit(event, topic, message)
+
         if topic is not None:
             error_msg += ' (' + topic + ')'
 

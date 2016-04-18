@@ -3,6 +3,7 @@ from src import Constants as C
 from mocket.mocket import Mocketizer, Mocket, MocketEntry
 
 import time
+import unittest
 
 """
 Feature: Events Connectivity
@@ -13,7 +14,7 @@ Feature: Events Connectivity
 """
 
 
-class TestEventConnection:
+class TestEventConnection(unittest.TestCase):
     @Mocketizer.wrap
     def test_client_subscribes_to_event(self):
         """
@@ -66,18 +67,31 @@ class TestEventConnection:
         time.sleep(0.1)
         assert Mocket.last_request() == (str(str.encode(listen)))
 
+    def test_client_throws_error_when_connection_lost(self):
+        """
+        Scenario: The client loses its connection to the server
+            When the connection to the server is lost
+            Given two seconds later
+            Then the client throws a "connectionError" error with message "Can't connect! Deepstream server unreachable"
+                And the clients connection state is "RECONNECTING"
+		"""
+        ack = C.ACTIONS_ACK + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ACK + C.MESSAGE_SEPARATOR
+        subscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ACK + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR
+        subscribe = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR
+        Mocket.register(MocketEntry(('localhost', 8989), [str.encode(ack)]))
+        ds = DeepStreamClient('localhost', 8989)
+        ds.login({"username": "XXX", "password": "YYY"}, None)
+        time.sleep(0.1)
+        with self.assertRaises(Exception) as context:
+            ds.event.subscribe("test1", None)
+        self.assertTrue("Can't connect! Deepstream server unreachable" in context.exception)
+
     def teardown_method(self, test_method):
         Mocket.reset()
 
+
+
 '''
-TODO implement these tests
-
-Scenario: The client loses its connection to the server
-	When the connection to the server is lost
-	Given two seconds later
-	Then the client throws a "connectionError" error with message "Can't connect! Deepstream server unreachable on localhost:7777"
-		And the clients connection state is "RECONNECTING"
-
 Scenario: The client publishes an event
 	When the client publishes an event named "test1" with data "yetAnotherValue"
 	Then the server did not recieve any messages

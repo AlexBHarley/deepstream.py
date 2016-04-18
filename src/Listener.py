@@ -10,7 +10,7 @@ class Listener:
         self._callback = callback
         self._client = client
         self._connection = connection
-        self._ack_timeout = Timer(60, self._on_timeout)
+        self._ack_timeout = Timer(10, self._on_timeout)
         self._ack_timeout.start()
         self._resubscribe_notifier = ResubscribeNotifier(self._client, self._listen())
         self._listen()

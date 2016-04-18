@@ -16,6 +16,8 @@ class Connection:
         self.state = Constants.CONNECTION_STATE_CLOSED
         self._client = client
         self._endpoint = None
+        self._reconnection_attempt = 0
+        self._reconnect_attempts = 5
         self._create_endpoint()
 
     def authenticate(self, auth_params, callback):
@@ -67,17 +69,10 @@ class Connection:
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port)
         self._endpoint.emitter.on('message', self._on_message)
-        self._endpoint.emitter.on('open', self._on_open())
-        self._endpoint.emitter.on('close', self._on_close())
+        self._endpoint.emitter.on('open', self._on_open)
+        self._endpoint.emitter.on('close', self._on_close)
         self._endpoint.emitter.on('error', self._on_error)
         self._endpoint.start()
-
-    def _on_close(self):
-        if self._deliberate_close:
-            self.state = Constants.CONNECTION_STATE_CLOSED
-        else:
-            #todo try reconnect the connection
-            pass
 
     def _on_open(self):
         self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
@@ -93,8 +88,21 @@ class Connection:
                 self._client._on_message(msg)
 
     def _on_error(self, message):
+        self.state = Constants.CONNECTION_STATE_ERROR
         self._client._on_error(None, Constants.CONNECTION_STATE_ERROR, message)
 
-    def close(self):
-        self._endpoint.close()
-        self._endpoint.join(1)
+    def _on_close(self):
+        if self._deliberate_close is True:
+            self.state = Constants.CONNECTION_STATE_CLOSED
+        else:
+            self._try_reconnect()
+
+    def _try_reconnect(self):
+        self.state = Constants.CONNECTION_STATE_RECONNECTING
+        if self._reconnection_attempt < self._reconnect_attempts:
+            self._try_open()
+        self._reconnection_attempt += 1
+
+    def _try_open(self):
+        self._endpoint.start()
+
