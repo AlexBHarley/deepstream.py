@@ -18,7 +18,6 @@ class AsyncSocket(threading.Thread):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.emitter.emit('open')
         self.timeout = 5
-        self.setDaemon(True)
 
     def _on_thread(self, function, *args, **kwargs):
         '''
@@ -49,20 +48,20 @@ class AsyncSocket(threading.Thread):
             except Exception as e:
                 self._on_error(e.args)
 
-            if self.buffer != b'':
-                if self._is_open:
-                    sent = self.sock.sendall(self.buffer)
-                    if sent is not None:
-                        self.emitter.emit('error', 'server connection has been closed')
-                else:
-                    self.emitter.emit('error', 'attempt to send message on closed socket: ' + self.buffer.decode("utf-8"))
-                self.buffer = b''
-            try:
-                data = self.sock.recv(1024)
-                if data:
-                    self._on_data(data)
-            except Exception as e:
-                self._on_error(e.args)
+            if self._is_open:
+                if self.buffer != b'':
+                    try:
+                        sent = self.sock.sendall(self.buffer)
+                        self.buffer = b''
+                    except (ConnectionRefusedError, socket.error):
+                        self._on_close()
+            if self._is_open:
+                try:
+                    data = self.sock.recv(1024)
+                    if data:
+                        self._on_data(data)
+                except Exception as e:
+                    self._on_error(e.args)
 
     def send(self, msg):
         self._on_thread(self._send, msg)
@@ -90,8 +89,9 @@ class AsyncSocket(threading.Thread):
         self.emitter.emit('message', raw_data)
 
     def _on_close(self):
+        self.sock.close()
+        self._is_open = False
         self.emitter.emit('close')
-        self.join()
 
     def close(self):
         self._on_thread(self.sock.close)
