@@ -19,17 +19,8 @@ class AsyncSocket(threading.Thread):
         self.out_q = Queue()
         self._is_open = False
         self.is_runnning = False
-        self.emitter = EventEmitter()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.timeout = 0.1
-
-    def _on_thread(self, function, *args, **kwargs):
-        '''
-        This method and implementation is taken directly from the below stackoverflow link. Allows us to add messages
-        to the socket in its own thread.
-        http://stackoverflow.com/questions/19033818/how-to-call-a-function-on-a-running-python-thread
-        '''
-        self.in_q.put((function, args, kwargs))
 
     def start(self):
         try:
@@ -37,16 +28,17 @@ class AsyncSocket(threading.Thread):
         except (ConnectionRefusedError, socket.error) as e:
             self._on_error(e)
         self._is_open = True
-        self.out_q.put({'open'})
         if not self.is_alive():
             super(AsyncSocket, self).start()
 
     def run(self):
+        self.out_q.put(('open', None))
+        os.kill(self._main_thread_pid, signal.SIGUSR1)
         self.is_runnning = True
         while self.is_runnning:
             try:
-                function, args, kwargs = self.in_q.get(timeout=self.timeout)
-                function(*args, **kwargs)
+                 data = self.in_q.get(timeout=self.timeout)
+                 self.buffer += data
             except TimeoutError:
                 pass
             except Empty:
@@ -73,10 +65,7 @@ class AsyncSocket(threading.Thread):
                     self._on_error(e.args)
 
     def send(self, msg):
-        self._on_thread(self._send, msg)
-
-    def _send(self, data):
-        self.buffer += data
+        self.in_q.put(msg)
 
     def _on_error(self, e):
         if isinstance(e, socket.error):
@@ -84,25 +73,26 @@ class AsyncSocket(threading.Thread):
                 msg = 'Can\'t connect! Deepstream server unreachable'
             else:
                 msg = e.strerror
-            self.out_q.put({'error': msg})
-            os.kill(self._main_thread_pid, signal.SIGUSR1)
+            self._put_err_on_q(msg)
         else:
-            self.out_q.put({'error': e})
-            os.kill(self._main_thread_pid, signal.SIGUSR1)
+            self._put_err_on_q(e)
+
+    def _put_err_on_q(self, err_msg):
+        self.out_q.put(('error', err_msg))
+        os.kill(self._main_thread_pid, signal.SIGUSR1)
 
     def _on_data(self, raw_data):
         if not isinstance(raw_data, bytes):
-            self.out_q.put({'error': 'received non-bytes message from socket'})
-            os.kill(self._main_thread_pid, signal.SIGUSR1)
+            self._put_err_on_q('received non-bytes message from socket')
             return
 
         if not self._is_open:
-            self.out_q.put({'error': 'received message on half closed socket: ' + raw_data.decode()})
-            os.kill(self._main_thread_pid, signal.SIGUSR1)
+            self._put_err_on_q('received message on half closed socket: ')
             return
+
         #todo checks for valid data
         #todo buffer data
-        self.out_q.put({'message': raw_data})
+        self.out_q.put(('message', raw_data))
         os.kill(self._main_thread_pid, signal.SIGUSR1)
         return
 

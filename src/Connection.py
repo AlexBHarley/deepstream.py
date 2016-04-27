@@ -3,6 +3,8 @@ from src.message import MessageBuilder
 from src.message import MessageParser
 from src.TcpConnection import AsyncSocket
 
+from queue import Empty
+
 import signal
 import os
 
@@ -73,11 +75,22 @@ class Connection:
 
     def _create_endpoint(self):
         self._endpoint = AsyncSocket(self._ip_address, self._port, self._pid)
-        self._endpoint.emitter.on('message', self._on_message)
-        self._endpoint.emitter.on('open', self._on_open)
-        self._endpoint.emitter.on('close', self._on_close)
-        self._endpoint.emitter.on('error', self._on_error)
         self._endpoint.start()
+
+    def _handle_data(self, a, b):
+        try:
+            msg_type, data = self._endpoint.out_q.get()
+
+            if msg_type == 'open':
+                self._on_open()
+            elif msg_type == 'message':
+                self._on_message(data)
+            elif msg_type == 'error':
+                self._on_error(data)
+            elif msg_type == 'close':
+                self._on_close()
+        except Empty:
+            pass
 
     def _on_open(self):
         self.state = Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION
@@ -101,9 +114,6 @@ class Connection:
             self.state = Constants.CONNECTION_STATE_CLOSED
         else:
             self._try_reconnect()
-
-    def _handle_data(self, data):
-        pass
 
     def _try_reconnect(self):
         self.state = Constants.CONNECTION_STATE_RECONNECTING
