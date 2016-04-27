@@ -3,6 +3,9 @@ from src.message import MessageBuilder
 from src.message import MessageParser
 from src.TcpConnection import AsyncSocket
 
+import signal
+import os
+
 
 class Connection:
 
@@ -14,6 +17,8 @@ class Connection:
         self._deliberate_close = False
         self._too_many_auth_attempts = False
         self.state = Constants.CONNECTION_STATE_CLOSED
+        signal.signal(signal.SIGUSR1, self._handle_data)
+        self._pid = os.getpid()
         self._client = client
         self._endpoint = None
         self._reconnection_attempt = 0
@@ -67,7 +72,7 @@ class Connection:
                 self._auth_callback(True, None, None)
 
     def _create_endpoint(self):
-        self._endpoint = AsyncSocket(self._ip_address, self._port)
+        self._endpoint = AsyncSocket(self._ip_address, self._port, self._pid)
         self._endpoint.emitter.on('message', self._on_message)
         self._endpoint.emitter.on('open', self._on_open)
         self._endpoint.emitter.on('close', self._on_close)
@@ -96,6 +101,9 @@ class Connection:
             self.state = Constants.CONNECTION_STATE_CLOSED
         else:
             self._try_reconnect()
+
+    def _handle_data(self, data):
+        pass
 
     def _try_reconnect(self):
         self.state = Constants.CONNECTION_STATE_RECONNECTING
