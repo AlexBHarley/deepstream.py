@@ -22,47 +22,44 @@ class AsyncSocket(threading.Thread):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.timeout = 0.1
 
-    def start(self):
+    def run(self):
         try:
             self.sock.connect((self._ip, self._port))
+            self._is_open = True
+            self.out_q.put(('open', None))
+            os.kill(self._main_thread_pid, signal.SIGUSR1)
         except (ConnectionRefusedError, socket.error) as e:
             self._on_error(e)
-        self._is_open = True
-        if not self.is_alive():
-            super(AsyncSocket, self).start()
-
-    def run(self):
-        self.out_q.put(('open', None))
-        os.kill(self._main_thread_pid, signal.SIGUSR1)
         self.is_runnning = True
-        while self.is_runnning:
-            try:
-                 data = self.in_q.get(timeout=self.timeout)
-                 self.buffer += data
-            except TimeoutError:
-                pass
-            except Empty:
-                pass
-            except Exception as e:
-                self._on_error(e.args)
-
-            if self.buffer != b'':
-                if self._is_open:
-                    try:
-                        sent = self.sock.sendall(self.buffer)
-                        self.buffer = b''
-                    except (ConnectionRefusedError, socket.error) as e:
-                        self._on_error(e)
-                else:
-                    self._on_error("client's connection was closed")
-
-            if self._is_open:
+        while True:
+            while self.is_runnning:
                 try:
-                    data = self.sock.recv(1024)
-                    if data:
-                        self._on_data(data)
+                     data = self.in_q.get(timeout=self.timeout)
+                     self.buffer += data
+                except TimeoutError:
+                    pass
+                except Empty:
+                    pass
                 except Exception as e:
                     self._on_error(e.args)
+
+                if self.buffer != b'':
+                    if self._is_open:
+                        try:
+                            sent = self.sock.sendall(self.buffer)
+                            self.buffer = b''
+                        except (ConnectionRefusedError, socket.error) as e:
+                            self._on_error(e)
+                    else:
+                        self._on_error("client's connection was closed")
+
+                if self._is_open:
+                    try:
+                        data = self.sock.recv(1024)
+                        if data:
+                            self._on_data(data)
+                    except Exception as e:
+                        self._on_error(e.args)
 
     def send(self, msg):
         self.in_q.put(msg)
@@ -76,6 +73,8 @@ class AsyncSocket(threading.Thread):
             self._put_err_on_q(msg)
         else:
             self._put_err_on_q(e)
+
+        self.is_runnning = False
 
     def _put_err_on_q(self, err_msg):
         self.out_q.put(('error', err_msg))

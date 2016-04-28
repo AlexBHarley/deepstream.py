@@ -67,6 +67,7 @@ class TestEventConnection(unittest.TestCase):
         time.sleep(0.1)
         assert Mocket.last_request() == (str(str.encode(listen)))
 
+    @Mocketizer.wrap
     def test_client_throws_error_when_connection_lost(self):
         """
         Scenario: The client loses its connection to the server
@@ -74,17 +75,19 @@ class TestEventConnection(unittest.TestCase):
             Given two seconds later
             Then the client throws a "connectionError" error with message "Can't connect! Deepstream server unreachable"
                 And the clients connection state is "RECONNECTING"
-		"""
+        """
         ack = C.ACTIONS_ACK + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ACK + C.MESSAGE_SEPARATOR
-        subscribe_ack = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_ACK + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR
-        subscribe = C.TOPIC_EVENT + C.MESSAGE_PART_SEPARATOR + C.ACTIONS_SUBSCRIBE + C.MESSAGE_PART_SEPARATOR + "test1" + C.MESSAGE_SEPARATOR
         Mocket.register(MocketEntry(('localhost', 8989), [str.encode(ack)]))
         ds = DeepStreamClient('localhost', 8989)
         ds.login({"username": "XXX", "password": "YYY"}, None)
-        time.sleep(0.1)
-        with self.assertRaises(Exception) as context:
-            ds.event.subscribe("test1", None)
-        self.assertTrue("Can't connect! Deepstream server unreachable" in context.exception)
+        time.sleep(1)
+        Mocket.reset()
+        time.sleep(1)
+
+        with self.assertRaises(Exception) as c:
+            ds.event.subscribe('event1', None)
+            time.sleep(2)
+        self.assertTrue("Can't connect! Deepstream server unreachable" in c.exception.args[0])
 
     def teardown_method(self, test_method):
         Mocket.reset()

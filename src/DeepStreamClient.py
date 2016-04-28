@@ -33,6 +33,7 @@ class DeepStreamClient:
         if len(self.emitter.listeners('error')) != 0:
             self.emitter.emit('error', message, event, topic)
             self.emitter.emit(event, topic, message)
+            return
 
         if topic is not None:
             error_msg += ' (' + topic + ')'
