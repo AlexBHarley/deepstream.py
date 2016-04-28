@@ -7,10 +7,10 @@ class ResubscribeNotifier:
         self._client = client
         self._resubscribe = resubscribe
         self._is_reconnecting = False
-        self._client.emitter.on('connection_state_changed', self._connection_state_changed())
+        self._client.emitter.on(C.EVENT_CONNECTION_STATE_CHANGED, self._connection_state_changed)
 
     def destroy(self):
-        self._client.emitter.remove_listener('connection_state_changed', self._connection_state_changed())
+        self._client.emitter.remove_listener(C.EVENT_CONNECTION_STATE_CHANGED, self._connection_state_changed)
         self._client = None
 
     def _connection_state_changed(self):

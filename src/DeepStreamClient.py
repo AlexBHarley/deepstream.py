@@ -10,8 +10,8 @@ class DeepStreamClient:
     def __init__(self, ip, port):
         self._ip = ip
         self._port = port
-        self._connection = Connection(self, self._ip, self._port)
         self.emitter = EventEmitter()
+        self._connection = Connection(self, self._ip, self._port)
         self.event = EventHandler(self._connection, self)
 
     def login(self, credentials, callback):

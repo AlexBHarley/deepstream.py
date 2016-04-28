@@ -17,6 +17,7 @@ class AsyncSocket(threading.Thread):
         self.buffer = b''
         self.in_q = Queue()
         self.out_q = Queue()
+        self.daemon = True
         self._is_open = False
         self.is_runnning = False
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -67,7 +68,7 @@ class AsyncSocket(threading.Thread):
     def _on_error(self, e):
         if isinstance(e, socket.error):
             if e.errno == errno.ECONNREFUSED:
-                msg = 'Can\'t connect! Deepstream server unreachable'
+                msg = 'Can\'t connect! Deepstream server unreachable at ' + str(self._ip) + ':' + str(self._port)
             else:
                 msg = e.strerror
             self._put_err_on_q(msg)

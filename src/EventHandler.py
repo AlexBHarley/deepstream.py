@@ -1,7 +1,9 @@
 from src import Constants as C
-from pyee import EventEmitter
 from src.AckTimeoutRegister import AckTimeoutRegister
+from src.ResubscribeNotifier import ResubscribeNotifier
 from src.Listener import Listener
+
+from pyee import EventEmitter
 
 
 class EventHandler:
@@ -11,7 +13,8 @@ class EventHandler:
         self._emitter = EventEmitter()
         self._client = client
         self._listeners = {}
-        self._ack_timeout_register = AckTimeoutRegister(self._client, C.TOPIC_EVENT, 60)
+        self._ack_timeout_register = AckTimeoutRegister(self._client, C.TOPIC_EVENT, 2)
+        self._resubscribe_notifier = ResubscribeNotifier(self._client, self._resubscribe)
 
     def handle(self, message):
         name = message["data"][0] if message["action"] is not C.ACTIONS_ACK else message["data"][1]
@@ -53,5 +56,11 @@ class EventHandler:
             self._listeners[pattern].destroy()
         else:
             self._client._on_error(C.TOPIC_EVENT, C.EVENT_NOT_LISTENING, pattern)
+
+    def _resubscribe(self):
+        events = self._emitter._events.keys()
+        for name in events:
+            self._connection.send_message(C.TOPIC_EVENT, C.ACTIONS_SUBSCRIBE, [name])
+
 
 
