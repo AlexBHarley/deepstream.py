@@ -5,12 +5,12 @@ from src.EventHandler import EventHandler
 from pyee import EventEmitter
 
 
-class DeepStreamClient:
+class DeepStreamClient(EventEmitter):
 
     def __init__(self, ip, port):
+        super().__init__()
         self._ip = ip
         self._port = port
-        self.emitter = EventEmitter()
         self._connection = Connection(self, self._ip, self._port)
         self.event = EventHandler(self._connection, self)
 
@@ -30,9 +30,9 @@ class DeepStreamClient:
         print('======== You can catch all deepstream errors by subscribing to the error event ========')
         error_msg = event + ': ' + message
 
-        if len(self.emitter.listeners('error')) != 0:
-            self.emitter.emit('error', message, event, topic)
-            self.emitter.emit(event, topic, message)
+        if len(self.listeners('error')) != 0:
+            self.emit('error', message, event, topic)
+            self.emit(event, topic, message)
             return
 
         if topic is not None:
