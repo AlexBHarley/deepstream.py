@@ -1,16 +1,10 @@
 from src import Constants
 from src.message import MessageBuilder
 from src.message import MessageParser
-from src.TcpConnection import AsyncSocket
-
-from queue import Empty
-
-import signal
-import os
+from src.TcpConnection import TcpConnection
 
 
 class Connection:
-
     def __init__(self, client, ip_address=None, port=None):
         self._ip_address = ip_address
         self._port = port
@@ -19,8 +13,6 @@ class Connection:
         self._deliberate_close = False
         self._too_many_auth_attempts = False
         self.state = Constants.CONNECTION_STATE_CLOSED
-        signal.signal(signal.SIGUSR1, self._handle_data)
-        self._pid = os.getpid()
         self._client = client
         self._endpoint = None
         self._reconnection_attempt = 0
@@ -95,36 +87,19 @@ class Connection:
                 self._auth_callback(True, None, None)
 
     def _create_endpoint(self):
-        self._endpoint = AsyncSocket(self._ip_address, self._port, self._pid)
-        self._endpoint.start()
-
-    def _handle_data(self, sig_no, s_frame):
-        """
-        Method attached to signal, called whenever tcp_connection gets any data. Hands off
-        message to the correct _on_* method
-
-        :param sig_no: signal number
-        :param s_frame: stack frame
-        """
-        try:
-            msg_type, data = self._endpoint.out_q.get()
-
-            if msg_type == 'open':
-                self._on_open()
-            elif msg_type == 'message':
-                self._on_message(data)
-            elif msg_type == 'error':
-                self._on_error(data)
-            elif msg_type == 'close':
-                self._on_close()
-        except Empty:
-            pass
+        self._endpoint = TcpConnection(self._ip_address, self._port)
+        self._endpoint.on('open', self._on_open)
+        self._endpoint.on('error', self._on_error)
+        self._endpoint.on('message', self._on_message)
+        self._endpoint.on('close', self._on_close)
+        self._endpoint.connect()
 
     def _on_open(self):
         """
         Method called when tcp_connection opens. Sets state and sends authentication
         parameters
         """
+        self._endpoint.start()
         self._set_state(Constants.CONNECTION_STATE_AWAITING_AUTHENTICATION)
         if self._auth_params is not None:
             self._send_auth_params()
@@ -176,4 +151,4 @@ class Connection:
         :param state: {string} specific state to change to
         """
         self.state = state
-        self._client.emitter.emit(Constants.EVENT_CONNECTION_STATE_CHANGED, state)
+        self._client.emit(Constants.EVENT_CONNECTION_STATE_CHANGED)
