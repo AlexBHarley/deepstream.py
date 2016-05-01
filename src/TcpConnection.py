@@ -44,6 +44,8 @@ class TcpConnection(EventEmitter):
         """
         try:
             msg_type, data = self._sock_thread.out_q.get()
+            if msg_type == 'error':
+                self.is_open = False
             self.emit(msg_type, data)
         except Empty:
             pass
@@ -76,7 +78,8 @@ class SocketThread(threading.Thread):
                     try:
                         self._sock.sendall(self._buffer)
                         self._buffer = b''
-                    except (ConnectionRefusedError) as e:
+                    except ConnectionRefusedError as e:
+                        self._buffer = b''
                         self._on_error(e)
 
                 try:

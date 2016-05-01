@@ -38,6 +38,11 @@ class DeepStreamClient(EventEmitter):
         if topic is not None:
             error_msg += ' (' + topic + ')'
 
+        #hack and a half. Clearing any remaining ack timeouts
+        #not sure if need to do this
+        for a in self.event._ack_timeout_register._register.values():
+            a.cancel()
+
         raise Exception(error_msg) from None
 
     def _on_message(self, message):
